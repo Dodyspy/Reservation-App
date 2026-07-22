@@ -362,7 +362,7 @@ class RestaurantService {
         
         let noonDate = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: updated.date) ?? updated.date
         
-        let updatedFields: [String: Any] = [
+        var updatedFields: [String: Any] = [
             "name": updated.name,
             "email": updated.email,
             "phone": updated.phone,
@@ -371,9 +371,11 @@ class RestaurantService {
             "dateTimestamp": Timestamp(date: noonDate),
             "time": updated.time,
             "notes": updated.specialRequests ?? "",
-            "customerId": updated.customerId as Any,
             "updatedAt": FieldValue.serverTimestamp()
         ]
+        if let customerId = updated.customerId {
+            updatedFields["customerId"] = customerId
+        }
         
         documentRef.updateData(updatedFields) { [weak self] error in
             if let error = error {
@@ -381,18 +383,15 @@ class RestaurantService {
                 return
             }
             
-            // Keep availability counters in sync when date/time/guests change
+            // Keep availability counters in sync when date/time/guests change.
+            // The recalculateAvailability Cloud Function uses the reservation's
+            // current date, so this recalculates the new date/time slot.
             let detailsChanged = !Calendar.current.isDate(original.date, inSameDayAs: updated.date)
                 || original.time != updated.time
                 || original.numberOfPeople != updated.numberOfPeople
             
             if detailsChanged {
                 self?.triggerAvailabilityRecalculation(restaurantCode: restaurantCode, reservationId: reservationId)
-                
-                // Also recalculate the original date if it moved to a different day
-                if !Calendar.current.isDate(original.date, inSameDayAs: updated.date), let originalId = original.id {
-                    self?.triggerAvailabilityRecalculation(restaurantCode: restaurantCode, reservationId: originalId)
-                }
             }
             
             completion(nil)
