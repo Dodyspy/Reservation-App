@@ -18,6 +18,12 @@ struct Reservation: Identifiable, Codable {
     // Customer tracking fields
     var customerId: String?
     
+    // Audit tracking fields
+    var modifiedBy: String?
+    var modifiedByName: String?
+    var modifiedByEmail: String?
+    var modifiedAt: Date?
+    
     // Firebase fields that don't match our model
     private var dateString: String?
     private var guests: Int?
@@ -38,6 +44,10 @@ struct Reservation: Identifiable, Codable {
         case arrivedAt
         case finishedAt
         case customerId
+        case modifiedBy
+        case modifiedByName
+        case modifiedByEmail
+        case modifiedAt
     }
     
     // Regular initializer for creating new reservations
@@ -54,6 +64,10 @@ struct Reservation: Identifiable, Codable {
         self.createdAt = nil // Will be set by Firebase
         self.arrivedAt = nil
         self.finishedAt = nil
+        self.modifiedBy = nil
+        self.modifiedByName = nil
+        self.modifiedByEmail = nil
+        self.modifiedAt = nil
     }
     
     init(from decoder: Decoder) throws {
@@ -111,6 +125,10 @@ struct Reservation: Identifiable, Codable {
         arrivedAt = try container.decodeIfPresent(Date.self, forKey: .arrivedAt)
         finishedAt = try container.decodeIfPresent(Date.self, forKey: .finishedAt)
         customerId = try container.decodeIfPresent(String.self, forKey: .customerId)
+        modifiedBy = try container.decodeIfPresent(String.self, forKey: .modifiedBy)
+        modifiedByName = try container.decodeIfPresent(String.self, forKey: .modifiedByName)
+        modifiedByEmail = try container.decodeIfPresent(String.self, forKey: .modifiedByEmail)
+        modifiedAt = try container.decodeIfPresent(Date.self, forKey: .modifiedAt)
         
         // Try to decode DocumentID
         _id = try DocumentID(from: decoder)
@@ -139,6 +157,10 @@ struct Reservation: Identifiable, Codable {
         try container.encodeIfPresent(customerId, forKey: .customerId)
         try container.encodeIfPresent(arrivedAt, forKey: .arrivedAt)
         try container.encodeIfPresent(finishedAt, forKey: .finishedAt)
+        try container.encodeIfPresent(modifiedBy, forKey: .modifiedBy)
+        try container.encodeIfPresent(modifiedByName, forKey: .modifiedByName)
+        try container.encodeIfPresent(modifiedByEmail, forKey: .modifiedByEmail)
+        try container.encodeIfPresent(modifiedAt, forKey: .modifiedAt)
         
         // Only encode createdAt if it's not nil (Firebase will set @ServerTimestamp)
         if let createdAt = createdAt {

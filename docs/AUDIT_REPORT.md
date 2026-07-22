@@ -18,16 +18,21 @@ Scope: `/Users/sxy/AppTest/ReservationApp` — Casanova d'Issy iOS reservation a
 ### Issues found
 
 1. **Firebase-only update.** ~~`updateReservation` writes directly to Firestore and does not use the `ReservationAPIService` fallback.~~ **Fixed** — now routes through `RestaurantService` or `ReservationAPIService` based on `useFirebase`.
-2. **No availability recalculation.** ~~Changing the date/time/guests does not trigger the `recalculateAvailability` Cloud Function.~~ **Fixed** — `RestaurantService.updateReservation` triggers recalculation for the new date and the original date when the reservation moves.
+2. **No availability recalculation.** ~~Changing the date/time/guests does not trigger the `recalculateAvailability` Cloud Function.~~ **Fixed** — `RestaurantService.updateReservation` triggers recalculation when date/time/guests change.
 3. **No customer notification.** Editing a reservation does not send an email/SMS update to the customer.
-4. **Hard-coded time slots.** Both `AddReservationView` and `EditReservationView` use the same fixed `timeSlots` array (`12:00`–`14:30`, `19:00`–`22:00`). They should be driven by the restaurant's configured opening hours.
+4. **No staff notification on edits.** ~~Editing a reservation did not alert other connected staff.~~ **Fixed** — Firestore `onUpdate` Cloud Function `sendUpdatedReservationNotification` sends an FCM push to the restaurant topic; the iOS notification handler distinguishes `reservation_updated` from `new_reservation`.
+5. **No audit trail for edits.** ~~The app did not track who modified a reservation or what changed.~~ **Fixed** — `RestaurantService.updateReservation` stores `modifiedBy`, `modifiedByName`, `modifiedByEmail`, `modifiedAt` on the reservation document, writes an `AuditService.updateReservation` entry, and `ReservationDetailView` displays the modifier and timestamp.
+6. **Hard-coded time slots.** Both `AddReservationView` and `EditReservationView` use the same fixed `timeSlots` array (`12:00`–`14:30`, `19:00`–`22:00`). They should be driven by the restaurant's configured opening hours.
 
 ### Changes made
 
-- Added `RestaurantService.updateReservation(original:updated:restaurantCode:completion:)` in `ReserveApp/Services/RestaurantService.swift`.
-- Added `ReservationAPIService.updateReservation(_:completion:)` in `ReserveApp/Services/ReservationAPIService.swift`.
-- Refactored `ReservationViewModel.updateReservation(original:updated:completion:)` to choose the correct backend.
+- Added `RestaurantService.updateReservation(original:updated:restaurantCode:modifiedBy:completion:)` in `ReserveApp/Services/RestaurantService.swift`.
+- Added `ReservationAPIService.updateReservation(_:modifiedBy:completion:)` in `ReserveApp/Services/ReservationAPIService.swift`.
+- Refactored `ReservationViewModel.updateReservation(original:updated:completion:)` to choose the correct backend and pass the current authenticated user.
 - Updated `EditReservationView.saveChanges` to pass both the original and updated reservations.
+- Added `modifiedBy`, `modifiedByName`, `modifiedByEmail`, `modifiedAt` fields to `Reservation.swift` model and `ReservationDetailView` UI.
+- Added `sendUpdatedReservationNotification` Firestore `onUpdate` Cloud Function in `/Users/sxy/AppTest/Casanovadissy/casanovadissy-site/functions/index.js` to push staff notifications on reservation edits.
+- Updated iOS notification deduplication in `ReserveAppApp.swift` to include notification type, preventing new and update notifications for the same reservation from suppressing each other.
 
 ---
 
@@ -63,12 +68,11 @@ The following files were not referenced anywhere in the project (only self-refer
 
 ## 4. Security & Configuration
 
-- **No Git repository** in this folder (`git status` fails). Ensure this is backed up / versioned elsewhere.
-- **Sensitive files present**:
+- Git repository exists and is pushed to `https://github.com/Dodyspy/Reservation-App`.
+- **Sensitive files present** (must stay in `.gitignore` and never be shared):
   - `ReserveApp/GoogleService-Info.plist`
   - `ReserveApp/Config.plist`
   - `AuthKey_8CC36M94AV.p8`
-- All three are in `.gitignore`, but verify they are never committed or shared.
 - API fallback uses a hard-coded `x-api-key: casanova-reserve-app-key` in `ReservationAPIService.swift`. Rotate this if it is a real secret.
 
 ---
@@ -109,9 +113,10 @@ The following files were not referenced anywhere in the project (only self-refer
 
 ## 9. Recommended Next Steps
 
-1. **Put this folder under Git** and commit the cleanup.
-2. **Add edit-reservation API support** and trigger availability recalculation.
-3. **Add customer notification** on reservation edits.
-4. **Remove or wrap debug logs** before release.
-5. **Add unit tests** for core ViewModel and Service logic.
-6. **Test edit flow on device** after cleanup to ensure archiving did not break references.
+1. ~~Put this folder under Git and commit the cleanup.~~ Done.
+2. ~~Add edit-reservation API support and trigger availability recalculation.~~ Done.
+3. **Deploy the `sendUpdatedReservationNotification` Cloud Function** in `/Users/sxy/AppTest/Casanovadissy/casanovadissy-site/functions/index.js` so staff receive real-time notifications.
+4. **Add customer notification** on reservation edits (email/SMS with updated details).
+5. **Remove or wrap debug logs** before release.
+6. **Add unit tests** for core ViewModel and Service logic.
+7. **Test edit flow on device** after cleanup to ensure archiving did not break references.

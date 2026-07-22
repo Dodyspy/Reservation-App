@@ -32,6 +32,19 @@ struct ReservationDetailView: View {
         return formatter
     }()
     
+    private let modifiedAtFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        formatter.locale = Locale(identifier: "fr_FR")
+        formatter.timeZone = TimeZone(identifier: "Europe/Paris")
+        return formatter
+    }()
+    
+    private func formatModifiedAt(_ date: Date) -> String {
+        modifiedAtFormatter.string(from: date)
+    }
+    
     var body: some View {
         ScrollView {
             ZStack {
@@ -143,6 +156,23 @@ struct ReservationDetailView: View {
                         }
                     }
                     .padding(.vertical, 8)
+                }
+                
+                // Last modification audit trail
+                if let modifierName = reservation.modifiedByName, !modifierName.isEmpty {
+                    HStack(spacing: 4) {
+                        Image(systemName: "pencil.line")
+                            .font(.caption)
+                        Text("Modifié par \(modifierName)")
+                            .font(.caption)
+                        if let modifiedAt = reservation.modifiedAt {
+                            Text("le \(formatModifiedAt(modifiedAt))")
+                                .font(.caption)
+                        }
+                        Spacer()
+                    }
+                    .foregroundColor(AppTheme.cream.opacity(0.7))
+                    .padding(.horizontal, 4)
                 }
                 
                 // Action buttons

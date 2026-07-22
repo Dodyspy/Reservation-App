@@ -345,6 +345,7 @@ class RestaurantService {
         original: Reservation,
         updated: Reservation,
         restaurantCode: String,
+        modifiedBy: RestaurantUser? = nil,
         completion: @escaping (Error?) -> Void
     ) {
         guard let reservationId = updated.id else {
@@ -376,6 +377,12 @@ class RestaurantService {
         if let customerId = updated.customerId {
             updatedFields["customerId"] = customerId
         }
+        if let modifier = modifiedBy {
+            updatedFields["modifiedBy"] = modifier.firebaseUid
+            updatedFields["modifiedByName"] = modifier.displayName
+            updatedFields["modifiedByEmail"] = modifier.email
+            updatedFields["modifiedAt"] = FieldValue.serverTimestamp()
+        }
         
         documentRef.updateData(updatedFields) { [weak self] error in
             if let error = error {
@@ -392,6 +399,37 @@ class RestaurantService {
             
             if detailsChanged {
                 self?.triggerAvailabilityRecalculation(restaurantCode: restaurantCode, reservationId: reservationId)
+            }
+            
+            // Audit trail: who changed what
+            if let modifier = modifiedBy {
+                var auditDetails: [String: String] = [
+                    "reservationId": reservationId,
+                    "customerName": updated.name,
+                    "guests": "\(updated.numberOfPeople)"
+                ]
+                if !Calendar.current.isDate(original.date, inSameDayAs: updated.date) {
+                    auditDetails["oldDate"] = dateFormatter.string(from: original.date)
+                    auditDetails["newDate"] = dateFormatter.string(from: updated.date)
+                }
+                if original.time != updated.time {
+                    auditDetails["oldTime"] = original.time
+                    auditDetails["newTime"] = updated.time
+                }
+                if original.numberOfPeople != updated.numberOfPeople {
+                    auditDetails["oldGuests"] = "\(original.numberOfPeople)"
+                    auditDetails["newGuests"] = "\(updated.numberOfPeople)"
+                }
+                if original.name != updated.name {
+                    auditDetails["oldName"] = original.name
+                    auditDetails["newName"] = updated.name
+                }
+                
+                AuditService.shared.log(
+                    action: .updateReservation,
+                    user: modifier,
+                    details: auditDetails
+                )
             }
             
             completion(nil)

@@ -22,6 +22,8 @@ Expected result:
 - The reservation detail shows the new name.
 - Firestore document is updated.
 - `updatedAt` is set.
+- `modifiedBy`, `modifiedByName`, `modifiedByEmail`, and `modifiedAt` are written to the reservation document.
+- An `updateReservation` audit log entry is created in `restaurants/{id}/audit_logs`.
 
 ## 3. Edit date/time/guests (availability sync)
 
@@ -54,8 +56,32 @@ Expected result:
 Expected result:
 - `ReservationAPIService.updateReservation` is called.
 - Network traffic shows a `POST` to `api.restaurantmanagerpro.fr/api/save-reservation`.
+- Request body includes the updated reservation fields **and** `modifiedBy`, `modifiedByName`, `modifiedByEmail`.
 
-## 6. Offline/error handling
+## 6. Staff notification on edit
+
+1. Deploy `sendUpdatedReservationNotification` Cloud Function in `/Users/sxy/AppTest/Casanovadissy/casanovadissy-site/functions/index.js`:
+   ```bash
+   cd /Users/sxy/AppTest/Casanovadissy/casanovadissy-site/functions
+   firebase deploy --only functions:sendUpdatedReservationNotification
+   ```
+2. Log in to the app on two different devices or simulator instances (same restaurant, different staff accounts).
+3. On device A, edit a reservation and save.
+
+Expected result:
+- Device B receives a push notification with title **“✏️ Réservation modifiée”**.
+- Notification body contains the modifier name (e.g., `John a modifie la reservation de ...`).
+- Tapping the notification opens the reservation detail.
+- The deduplication logic in `ReserveAppApp.swift` does **not** suppress the update because the dedup key includes the notification type.
+
+## 7. Modified-by display
+
+1. Open a reservation that has been edited.
+
+Expected result:
+- Below the reservation details, a caption shows **“Modifié par {name} le {date} {time}”** if `modifiedByName` and `modifiedAt` are present.
+
+## 8. Offline/error handling
 
 1. Edit a reservation.
 2. Turn on airplane mode or use a bad network link conditioner.
@@ -65,7 +91,7 @@ Expected result:
 - Error alert is shown.
 - The edit view stays open so the user can retry.
 
-## 7. Regression: status change still works
+## 9. Regression: status change still works
 
 1. Open a reservation.
 2. Tap **Modifier le Statut**.
@@ -76,7 +102,7 @@ Expected result:
 - `arrivedAt` or `finishedAt` is set.
 - `recalculateAvailability` is triggered when marking **Terminée** or **No-show**.
 
-## 8. Regression: add new reservation
+## 10. Regression: add new reservation
 
 1. Tap the add button and create a new reservation.
 
@@ -84,8 +110,10 @@ Expected result:
 - Reservation is created.
 - No compiler errors or runtime crashes.
 
-## Automated tests to add
+## 11. Automated tests to add
 
 - `ReservationViewModel.updateReservation` routes to `RestaurantService` when `useFirebase == true`.
 - `ReservationViewModel.updateReservation` routes to `ReservationAPIService` when `useFirebase == false`.
 - `RestaurantService.updateReservation` calls `triggerAvailabilityRecalculation` when date/time/guests change.
+- `RestaurantService.updateReservation` writes `modifiedBy`, `modifiedByName`, `modifiedByEmail`, and `modifiedAt` when a modifier is provided.
+- `RestaurantService.updateReservation` writes an `AuditService.updateReservation` entry after a successful update.

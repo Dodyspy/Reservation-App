@@ -401,11 +401,14 @@ class ReservationViewModel: ObservableObject {
             return
         }
         
+        let currentUser = AuthenticationService.shared.currentUser
+        
         if useFirebase {
             RestaurantService.shared.updateReservation(
                 original: original,
                 updated: updated,
-                restaurantCode: restaurantId
+                restaurantCode: restaurantId,
+                modifiedBy: currentUser
             ) { error in
                 DispatchQueue.main.async {
                     if let error = error {
@@ -418,7 +421,10 @@ class ReservationViewModel: ObservableObject {
                 }
             }
         } else {
-            ReservationAPIService.shared.updateReservation(updated) { error in
+            ReservationAPIService.shared.updateReservation(
+                updated,
+                modifiedBy: currentUser
+            ) { error in
                 DispatchQueue.main.async {
                     if let error = error {
                         print("❌ Failed to update reservation via API: \(error.localizedDescription)")

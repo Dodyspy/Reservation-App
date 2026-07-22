@@ -396,19 +396,22 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
             print("   - \(key): \(value)")
         }
         
-        // Check for duplicate based on reservationId (within the recent window)
+        // Check for duplicate based on reservationId + notification type (within the recent window)
+        // This prevents a new_reservation and a reservation_updated for the same ID from suppressing each other.
         if let reservationId = userInfo["reservationId"] as? String {
-            if AppDelegate.processedNotificationIds.contains(reservationId) {
-                print("⚠️ DUPLICATE NOTIFICATION DETECTED - Suppressing: \(reservationId)")
+            let notificationType = userInfo["type"] as? String ?? "unknown"
+            let dedupKey = "\(notificationType)_\(reservationId)"
+            if AppDelegate.processedNotificationIds.contains(dedupKey) {
+                print("⚠️ DUPLICATE NOTIFICATION DETECTED - Suppressing: \(dedupKey)")
                 completionHandler([]) // Don't show duplicate
                 return
             }
             // Add to recent list and prune if over cap
-            AppDelegate.processedNotificationIds.append(reservationId)
+            AppDelegate.processedNotificationIds.append(dedupKey)
             if AppDelegate.processedNotificationIds.count > AppDelegate.maxProcessedIds {
                 AppDelegate.processedNotificationIds.removeFirst()
             }
-            print("✅ New notification - will display: \(reservationId)")
+            print("✅ New notification - will display: \(dedupKey)")
         }
         
         // Show notification even when app is in foreground

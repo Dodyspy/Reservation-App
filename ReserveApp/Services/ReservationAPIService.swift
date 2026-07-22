@@ -118,7 +118,11 @@ class ReservationAPIService {
         }.resume()
     }
     
-    func updateReservation(_ reservation: Reservation, completion: @escaping (Error?) -> Void) {
+    func updateReservation(
+        _ reservation: Reservation,
+        modifiedBy: RestaurantUser? = nil,
+        completion: @escaping (Error?) -> Void
+    ) {
         guard let reservationId = reservation.id else {
             completion(NSError(domain: "Missing reservation ID", code: 400, userInfo: nil))
             return
@@ -139,7 +143,7 @@ class ReservationAPIService {
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         request.addValue("casanova-reserve-app-key", forHTTPHeaderField: "x-api-key")
         
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "id": reservationId,
             "name": reservation.name,
             "email": reservation.email,
@@ -150,6 +154,11 @@ class ReservationAPIService {
             "notes": reservation.specialRequests ?? "Aucune note",
             "status": reservation.status.rawValue
         ]
+        if let modifier = modifiedBy {
+            body["modifiedBy"] = modifier.firebaseUid
+            body["modifiedByName"] = modifier.displayName
+            body["modifiedByEmail"] = modifier.email
+        }
         
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
