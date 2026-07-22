@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+
+# Xcode
+*.xcworkspace
+xcuserdata/
+DerivedData/
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Firebase secrets (keep private)
+ReserveApp/GoogleService-Info.plist
+
+# App secrets (fill from Config.plist.example)
+ReserveApp/Config.plist
+
+# API / Auth keys
+*.p8
+AuthKey_*.p8
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+_archive/

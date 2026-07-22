@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CloudFunctionBaseURL</key>
+	<string>https://YOUR-REGION-YOUR-PROJECT.cloudfunctions.net</string>
+	<key>EmailJSServiceID</key>
+	<string>your_service_id</string>
+	<key>EmailJSTemplateID</key>
+	<string>your_template_id</string>
+	<key>EmailJSUserID</key>
+	<string>your_user_id</string>
+</dict>
+</plist>
