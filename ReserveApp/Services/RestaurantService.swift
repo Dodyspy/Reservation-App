@@ -341,6 +341,64 @@ class RestaurantService {
         }
     }
     
+    func updateReservation(
+        original: Reservation,
+        updated: Reservation,
+        restaurantCode: String,
+        completion: @escaping (Error?) -> Void
+    ) {
+        guard let reservationId = updated.id else {
+            completion(NSError(domain: "RestaurantService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Missing reservation ID"]))
+            return
+        }
+        
+        let collection = getReservationsCollection(for: restaurantCode)
+        let documentRef = collection.document(reservationId)
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd/MM/yyyy"
+        dateFormatter.timeZone = TimeZone(identifier: "Europe/Paris")
+        dateFormatter.locale = Locale(identifier: "fr_FR")
+        
+        let noonDate = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: updated.date) ?? updated.date
+        
+        let updatedFields: [String: Any] = [
+            "name": updated.name,
+            "email": updated.email,
+            "phone": updated.phone,
+            "guests": updated.numberOfPeople,
+            "date": dateFormatter.string(from: updated.date),
+            "dateTimestamp": Timestamp(date: noonDate),
+            "time": updated.time,
+            "notes": updated.specialRequests ?? "",
+            "customerId": updated.customerId as Any,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+        
+        documentRef.updateData(updatedFields) { [weak self] error in
+            if let error = error {
+                completion(error)
+                return
+            }
+            
+            // Keep availability counters in sync when date/time/guests change
+            let detailsChanged = !Calendar.current.isDate(original.date, inSameDayAs: updated.date)
+                || original.time != updated.time
+                || original.numberOfPeople != updated.numberOfPeople
+            
+            if detailsChanged {
+                self?.triggerAvailabilityRecalculation(restaurantCode: restaurantCode, reservationId: reservationId)
+                
+                // Also recalculate the original date if it moved to a different day
+                if !Calendar.current.isDate(original.date, inSameDayAs: updated.date), let originalId = original.id {
+                    self?.triggerAvailabilityRecalculation(restaurantCode: restaurantCode, reservationId: originalId)
+                }
+            }
+            
+            completion(nil)
+        }
+    }
+    
     func getCustomerHistory(email: String, phone: String, restaurantCode: String, completion: @escaping (CustomerHistory) -> Void) {
         let collection = RestaurantService.shared.getCustomersCollection(for: restaurantCode)
         

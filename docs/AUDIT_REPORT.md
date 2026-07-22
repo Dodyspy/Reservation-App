@@ -11,20 +11,23 @@ Scope: `/Users/sxy/AppTest/ReservationApp` — Casanova d'Issy iOS reservation a
 
 - UI: `ReserveApp/Views/EditReservationView.swift`
 - Entry points: `ReserveApp/Views/ReservationDetailView.swift` (toolbar button + action sheet button)
-- ViewModel method: `ReservationViewModel.updateReservation(_:completion:)`
+- ViewModel method: `ReservationViewModel.updateReservation(original:updated:completion:)`
 - Editable fields: customer name, email, phone, number of guests, date, time, special requests.
 - Status is intentionally not editable in this screen; status changes use the dedicated action sheet.
 
 ### Issues found
 
-1. **Firebase-only update.** `updateReservation` writes directly to Firestore and does not use the `ReservationAPIService` fallback. If Firebase is unavailable and the app is in API mode, edits will fail.
-2. **No availability recalculation.** Changing the date/time/guests does not trigger the `recalculateAvailability` Cloud Function. This can leave availability counters out of sync.
+1. **Firebase-only update.** ~~`updateReservation` writes directly to Firestore and does not use the `ReservationAPIService` fallback.~~ **Fixed** — now routes through `RestaurantService` or `ReservationAPIService` based on `useFirebase`.
+2. **No availability recalculation.** ~~Changing the date/time/guests does not trigger the `recalculateAvailability` Cloud Function.~~ **Fixed** — `RestaurantService.updateReservation` triggers recalculation for the new date and the original date when the reservation moves.
 3. **No customer notification.** Editing a reservation does not send an email/SMS update to the customer.
 4. **Hard-coded time slots.** Both `AddReservationView` and `EditReservationView` use the same fixed `timeSlots` array (`12:00`–`14:30`, `19:00`–`22:00`). They should be driven by the restaurant's configured opening hours.
 
-### Recommendation
+### Changes made
 
-Route edits through the same backend path as creation (`save-reservation` Cloud Function / API) so availability, customer notification, and audit logic are handled consistently.
+- Added `RestaurantService.updateReservation(original:updated:restaurantCode:completion:)` in `ReserveApp/Services/RestaurantService.swift`.
+- Added `ReservationAPIService.updateReservation(_:completion:)` in `ReserveApp/Services/ReservationAPIService.swift`.
+- Refactored `ReservationViewModel.updateReservation(original:updated:completion:)` to choose the correct backend.
+- Updated `EditReservationView.saveChanges` to pass both the original and updated reservations.
 
 ---
 

@@ -168,7 +168,7 @@ struct EditReservationView: View {
         // Preserve the existing Firestore document ID so updateReservation targets the right doc
         updated.id = reservation.id
 
-        viewModel.updateReservation(updated) { success, error in
+        viewModel.updateReservation(original: reservation, updated: updated) { success, error in
             isSaving = false
             if success {
                 alertMessage = "Réservation modifiée avec succès."

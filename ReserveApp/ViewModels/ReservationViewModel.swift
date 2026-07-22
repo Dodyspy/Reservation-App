@@ -394,50 +394,42 @@ class ReservationViewModel: ObservableObject {
     
     // MARK: - Update Reservation
     
-    func updateReservation(_ reservation: Reservation, completion: @escaping (Bool, Error?) -> Void) {
-        guard let reservationId = reservation.id,
-              let restaurantId = UserDefaults.standard.string(forKey: "restaurantDocumentId"),
+    func updateReservation(original: Reservation, updated: Reservation, completion: @escaping (Bool, Error?) -> Void) {
+        guard let restaurantId = UserDefaults.standard.string(forKey: "restaurantDocumentId"),
               !restaurantId.isEmpty else {
             completion(false, NSError(domain: "ReservationViewModel", code: -1, userInfo: [NSLocalizedDescriptionKey: "Données manquantes pour la mise à jour."]))
             return
         }
         
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd/MM/yyyy"
-        dateFormatter.timeZone = TimeZone(identifier: "Europe/Paris")
-        dateFormatter.locale = Locale(identifier: "fr_FR")
-        let dateString = dateFormatter.string(from: reservation.date)
-        
-        let noonDate = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: reservation.date) ?? reservation.date
-        
-        let updatedFields: [String: Any] = [
-            "name": reservation.name,
-            "email": reservation.email,
-            "phone": reservation.phone,
-            "guests": reservation.numberOfPeople,
-            "date": dateString,
-            "dateTimestamp": Timestamp(date: noonDate),
-            "time": reservation.time,
-            "notes": reservation.specialRequests ?? "",
-            "updatedAt": FieldValue.serverTimestamp()
-        ]
-        
-        let db = Firestore.firestore()
-        db.collection("restaurants")
-            .document(restaurantId)
-            .collection("reservations")
-            .document(reservationId)
-            .updateData(updatedFields) { error in
+        if useFirebase {
+            RestaurantService.shared.updateReservation(
+                original: original,
+                updated: updated,
+                restaurantCode: restaurantId
+            ) { error in
                 DispatchQueue.main.async {
                     if let error = error {
                         print("❌ Failed to update reservation: \(error.localizedDescription)")
                         completion(false, error)
                     } else {
-                        print("✅ Reservation updated successfully: \(reservationId)")
+                        print("✅ Reservation updated successfully: \(updated.id ?? "unknown")")
                         completion(true, nil)
                     }
                 }
             }
+        } else {
+            ReservationAPIService.shared.updateReservation(updated) { error in
+                DispatchQueue.main.async {
+                    if let error = error {
+                        print("❌ Failed to update reservation via API: \(error.localizedDescription)")
+                        completion(false, error)
+                    } else {
+                        print("✅ Reservation updated via API: \(updated.id ?? "unknown")")
+                        completion(true, nil)
+                    }
+                }
+            }
+        }
     }
     
     // MARK: - Customer Tracking

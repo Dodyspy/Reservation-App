@@ -118,6 +118,56 @@ class ReservationAPIService {
         }.resume()
     }
     
+    func updateReservation(_ reservation: Reservation, completion: @escaping (Error?) -> Void) {
+        guard let reservationId = reservation.id else {
+            completion(NSError(domain: "Missing reservation ID", code: 400, userInfo: nil))
+            return
+        }
+        
+        guard let url = URL(string: baseURL + saveReservationEndpoint) else {
+            completion(NSError(domain: "Invalid URL", code: 400, userInfo: nil))
+            return
+        }
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd/MM/yyyy"
+        dateFormatter.locale = Locale(identifier: "fr_FR")
+        let formattedDate = dateFormatter.string(from: reservation.date)
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.addValue("casanova-reserve-app-key", forHTTPHeaderField: "x-api-key")
+        
+        let body: [String: Any] = [
+            "id": reservationId,
+            "name": reservation.name,
+            "email": reservation.email,
+            "phone": reservation.phone,
+            "guests": reservation.numberOfPeople,
+            "date": formattedDate,
+            "time": reservation.time,
+            "notes": reservation.specialRequests ?? "Aucune note",
+            "status": reservation.status.rawValue
+        ]
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        } catch {
+            completion(error)
+            return
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                completion(error)
+                return
+            }
+            
+            completion(nil)
+        }.resume()
+    }
+    
     func deleteReservation(reservationId: String, completion: @escaping (Error?) -> Void) {
         guard let url = URL(string: baseURL + deleteReservationEndpoint) else {
             completion(NSError(domain: "Invalid URL", code: 400, userInfo: nil))
