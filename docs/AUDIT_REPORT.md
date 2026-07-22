@@ -96,9 +96,9 @@ The following files were not referenced anywhere in the project (only self-refer
 
 ## 7. Known Pending Items (from previous notes)
 
-- Empty circle on navigation bar (cosmetic).
-- Customer detail view loading issue.
-- Duplicate notification cleanup.
+- ~~Empty circle on navigation bar (cosmetic).~~ Fixed — replaced deprecated `navigationBarItems(trailing:)` with `.toolbar { ToolbarItem(placement: .navigationBarTrailing) }` and added `.navigationBarTitleDisplayMode(.inline)`.
+- ~~Customer detail view loading issue.~~ Fixed — `CustomerViewModel` now observes `RestaurantManager.currentRestaurant` and rebuilds its Firestore listener when the selected restaurant changes, so real customer profiles load instead of relying on reservation-derived fallback data.
+- ~~Duplicate notification cleanup.~~ Fixed — iOS notification deduplication now keys by `type + reservationId`.
 - Build and test on a physical device.
 
 ---
@@ -115,8 +115,8 @@ The following files were not referenced anywhere in the project (only self-refer
 
 1. ~~Put this folder under Git and commit the cleanup.~~ Done.
 2. ~~Add edit-reservation API support and trigger availability recalculation.~~ Done.
-3. **Deploy the `sendUpdatedReservationNotification` Cloud Function** in `/Users/sxy/AppTest/Casanovadissy/casanovadissy-site/functions/index.js` so staff receive real-time notifications.
-4. **Add customer notification** on reservation edits (email/SMS with updated details).
-5. **Remove or wrap debug logs** before release.
+3. ~~Deploy the `sendUpdatedReservationNotification` Cloud Function.~~ Done.
+4. ~~Remove or wrap debug logs before release.~~ Done.
+5. **Add customer notification** on reservation edits (email/SMS with updated details).
 6. **Add unit tests** for core ViewModel and Service logic.
-7. **Test edit flow on device** after cleanup to ensure archiving did not break references.
+7. **Test edit/customer flows on device** after cleanup to ensure archiving did not break references.

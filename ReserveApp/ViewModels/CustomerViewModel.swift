@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import Combine
 import FirebaseFirestore
 
 @MainActor
@@ -11,18 +12,34 @@ class CustomerViewModel: ObservableObject {
     private let db = Firestore.firestore()
     private var listener: ListenerRegistration?
     private let restaurantManager = RestaurantManager.shared
+    private var cancellables = Set<AnyCancellable>()
     
     init() {
         setupFirestoreListener()
+        
+        // Reload the listener whenever the selected restaurant changes.
+        restaurantManager.$currentRestaurant
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.setupFirestoreListener()
+                }
+            }
+            .store(in: &cancellables)
     }
     
     deinit {
         listener?.remove()
+        cancellables.removeAll()
     }
     
     // MARK: - Firebase Operations
     
     private func setupFirestoreListener() {
+        // Tear down any existing listener before creating a new one.
+        listener?.remove()
+        listener = nil
+        
         guard restaurantManager.restaurantCode != nil else {
             Logger.debug("❌ No restaurant code available for customer loading")
             return

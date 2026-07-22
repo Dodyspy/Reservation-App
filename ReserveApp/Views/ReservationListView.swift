@@ -391,45 +391,48 @@ struct ReservationListView: View {
             }
             .background(AppTheme.anthracite)
             .navigationTitle("")
-            .navigationBarItems(
-                trailing: HStack(spacing: 15) {
-                    // Notification indicator
-                    if viewModel.newReservationCount > 0 {
-                        Button(action: {
-                            showNotifications = true
-                        }) {
-                            ZStack {
-                                Image(systemName: "bell.fill")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(AppTheme.gold)
-                                
-                                // Badge with count
-                                Text("\(viewModel.newReservationCount)")
-                                    .font(.caption2)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.white)
-                                    .frame(minWidth: 16, minHeight: 16)
-                                    .background(Color.red)
-                                    .clipShape(Circle())
-                                    .offset(x: 8, y: -8)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 15) {
+                        // Notification indicator
+                        if viewModel.newReservationCount > 0 {
+                            Button(action: {
+                                showNotifications = true
+                            }) {
+                                ZStack {
+                                    Image(systemName: "bell.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(AppTheme.gold)
+                                    
+                                    // Badge with count
+                                    Text("\(viewModel.newReservationCount)")
+                                        .font(.caption2)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.white)
+                                        .frame(minWidth: 16, minHeight: 16)
+                                        .background(Color.red)
+                                        .clipShape(Circle())
+                                        .offset(x: 8, y: -8)
+                                }
                             }
+                            .accessibilityLabel("\(viewModel.newReservationCount) nouvelles réservations")
                         }
-                        .accessibilityLabel("\(viewModel.newReservationCount) nouvelles réservations")
-                    }
 
-                    // Test reservation button (only for DEMO2024) - moved from deleted add button
-                    if restaurantManager.restaurantCode == "DEMO2024" {
-                        Button(action: {
-                            showingTestReservation = true
-                        }) {
-                            Image(systemName: "flask.fill")
-                                .font(.system(size: 18))
-                                .foregroundColor(.green)
+                        // Test reservation button (only for DEMO2024) - moved from deleted add button
+                        if restaurantManager.restaurantCode == "DEMO2024" {
+                            Button(action: {
+                                showingTestReservation = true
+                            }) {
+                                Image(systemName: "flask.fill")
+                                    .font(.system(size: 18))
+                                    .foregroundColor(.green)
+                            }
+                            .accessibilityLabel("Créer une réservation test")
                         }
-                        .accessibilityLabel("Créer une réservation test")
                     }
                 }
-            )
+            }
             .overlay(
                 // Floating Add Reservation Button
                 VStack {
