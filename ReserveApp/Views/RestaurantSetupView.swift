@@ -114,8 +114,8 @@ struct RestaurantSetupView: View {
                     // Store both the restaurant code and document ID
                     UserDefaults.standard.set(restaurantCode.uppercased(), forKey: "selectedRestaurantCode")
                     UserDefaults.standard.set(documentId, forKey: "restaurantDocumentId")
-                    print("✅ Stored restaurant code: \(restaurantCode.uppercased())")
-                    print("✅ Stored document ID: \(documentId)")
+                    Logger.debug("✅ Stored restaurant code: \(restaurantCode.uppercased())")
+                    Logger.debug("✅ Stored document ID: \(documentId)")
                     
                     restaurantManager.setCurrentRestaurant(restaurant)
                 } else {

@@ -101,7 +101,7 @@ struct TableManagementView: View {
     
     private func assignTable(_ tableNumber: Int, to reservation: Reservation) {
         // This would update the reservation in Firestore with the assigned table
-        print("Assigning table \(tableNumber) to reservation \(reservation.name)")
+        Logger.debug("Assigning table \(tableNumber) to reservation \(reservation.name)")
         selectedReservation = nil
         showingTableAssignment = false
     }
@@ -129,7 +129,7 @@ struct TableManagementView: View {
     
     private func resetTableAssignments() {
         // This would clear all table assignments
-        print("Resetting all table assignments")
+        Logger.debug("Resetting all table assignments")
     }
 }
 

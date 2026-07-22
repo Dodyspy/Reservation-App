@@ -153,7 +153,7 @@ struct MandatoryLoginView: View {
                 
                 switch result {
                 case .success(let user):
-                    print("✅ Connecté en tant que: \(user.displayName)")
+                    Logger.debug("✅ Connecté en tant que: \(user.displayName)")
                 case .failure(let error):
                     let errorCode = (error as NSError).code
                     switch errorCode {

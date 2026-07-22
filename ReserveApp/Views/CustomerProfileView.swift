@@ -264,7 +264,7 @@ struct CustomerProfileView: View {
     
     private func exportCustomerList() {
         // Implementation for exporting customer data
-        print("Exporting customer list...")
+        Logger.debug("Exporting customer list...")
     }
 }
 
@@ -360,7 +360,7 @@ struct CustomerDetailView: View {
         self.customer = customer
         self.viewModel = viewModel
         self.customerViewModel = customerViewModel
-        print("✅ CustomerDetailView initialized for: \(customer.primary_email)")
+        Logger.debug("✅ CustomerDetailView initialized for: \(customer.primary_email)")
     }
     
     private var customerReservations: [Reservation] {
@@ -594,7 +594,7 @@ struct CustomerDetailView: View {
     
     private func saveCustomerChanges() {
         // This method is no longer needed - editing is handled by EditCustomerView
-        print("Customer editing handled by EditCustomerView...")
+        Logger.debug("Customer editing handled by EditCustomerView...")
     }
 }
 

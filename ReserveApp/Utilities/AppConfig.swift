@@ -55,7 +55,7 @@ class AppConfig {
         guard let url = Bundle.main.url(forResource: "Config", withExtension: "plist"),
               let data = try? Data(contentsOf: url),
               let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any] else {
-            print("⚠️ Config.plist not found or invalid. Secrets will be empty.")
+            Logger.debug("⚠️ Config.plist not found or invalid. Secrets will be empty.")
             return [:]
         }
         return plist

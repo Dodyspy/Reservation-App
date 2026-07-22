@@ -25,7 +25,7 @@ class ReservationViewModel: ObservableObject {
         case .firebase:
             useFirebase = AppConfig.shared.isFirebaseConfigured()
             if !useFirebase {
-                print("Warning: Firebase is configured as the data source but GoogleService-Info.plist is missing")
+                Logger.debug("Warning: Firebase is configured as the data source but GoogleService-Info.plist is missing")
             }
         case .api:
             useFirebase = false
@@ -50,18 +50,18 @@ class ReservationViewModel: ObservableObject {
         // Check restaurant status and show warning if closed
         if let restaurant = restaurantManager.currentRestaurant {
             if let closureMessage = restaurant.getClosureMessage() {
-                print("⚠️ Restaurant status: \(closureMessage)")
+                Logger.debug("⚠️ Restaurant status: \(closureMessage)")
             }
         }
         
         // Get restaurant document ID from UserDefaults
         guard let restaurantId = UserDefaults.standard.string(forKey: "restaurantDocumentId"), !restaurantId.isEmpty else {
             error = "Document ID manquant. Veuillez vous reconnecter."
-            print("❌ No restaurant document ID found. User needs to reconnect.")
+            Logger.debug("❌ No restaurant document ID found. User needs to reconnect.")
             return
         }
         
-        print("📡 Fetching reservations for restaurant ID: \(restaurantId)")
+        Logger.debug("📡 Fetching reservations for restaurant ID: \(restaurantId)")
         
         isLoading = true
         error = nil
@@ -74,15 +74,15 @@ class ReservationViewModel: ObservableObject {
                     self?.isLoading = false
                     
                     if let error = error {
-                        print("❌ Firebase listener error: \(error.localizedDescription)")
+                        Logger.debug("❌ Firebase listener error: \(error.localizedDescription)")
                         self?.error = "Failed to load reservations: \(error.localizedDescription)"
                         self?.fallbackToAPI()
                         return
                     }
                     
                     if let reservations = reservations {
-                        print("🔔 Listener triggered with \(reservations.count) reservations")
-                        print("📍 Listening on path: restaurants/\(restaurantId)/reservations")
+                        Logger.debug("🔔 Listener triggered with \(reservations.count) reservations")
+                        Logger.debug("📍 Listening on path: restaurants/\(restaurantId)/reservations")
                         self?.handleReservationsUpdate(reservations)
                     }
                 }
@@ -125,7 +125,7 @@ class ReservationViewModel: ObservableObject {
                     }
                 } else {
                     DispatchQueue.main.async {
-                        print("Reservation status updated successfully to: \(status.rawValue)")
+                        Logger.debug("Reservation status updated successfully to: \(status.rawValue)")
                     }
                     // Increment no_show_count on the customer document
                     if status == .noShow {
@@ -145,35 +145,35 @@ class ReservationViewModel: ObservableObject {
     }
     
     func deleteReservation(reservation: Reservation) {
-        print("🗑️ ViewModel: deleteReservation called for: \(reservation.name)")
+        Logger.debug("🗑️ ViewModel: deleteReservation called for: \(reservation.name)")
         
         guard let id = reservation.id else {
-            print("❌ ViewModel: Reservation ID is nil")
+            Logger.debug("❌ ViewModel: Reservation ID is nil")
             return
         }
         
         guard restaurantManager.restaurantCode != nil else {
-            print("❌ ViewModel: Restaurant code is nil")
+            Logger.debug("❌ ViewModel: Restaurant code is nil")
             return
         }
         
         guard let restaurantId = UserDefaults.standard.string(forKey: "restaurantDocumentId") else {
-            print("❌ ViewModel: Restaurant document ID is nil")
+            Logger.debug("❌ ViewModel: Restaurant document ID is nil")
             return
         }
         
-        print("✅ ViewModel: All required data present - ID: \(id), RestaurantId: \(restaurantId)")
-        print("🔄 ViewModel: useFirebase = \(useFirebase)")
+        Logger.debug("✅ ViewModel: All required data present - ID: \(id), RestaurantId: \(restaurantId)")
+        Logger.debug("🔄 ViewModel: useFirebase = \(useFirebase)")
         
         if useFirebase {
             RestaurantService.shared.deleteReservation(reservationId: id, restaurantCode: restaurantId) { [weak self] error in
                 if let error = error {
-                    print("❌ ViewModel: Delete failed with error: \(error.localizedDescription)")
+                    Logger.debug("❌ ViewModel: Delete failed with error: \(error.localizedDescription)")
                     DispatchQueue.main.async {
                         self?.error = "Failed to delete reservation: \(error.localizedDescription)"
                     }
                 } else {
-                    print("✅ ViewModel: Delete completed successfully")
+                    Logger.debug("✅ ViewModel: Delete completed successfully")
                 }
             }
         } else {
@@ -198,8 +198,8 @@ class ReservationViewModel: ObservableObject {
     
     private func handleReservationsUpdate(_ newReservations: [Reservation]) {
         let previousCount = reservations.count
-        print("🔄 handleReservationsUpdate called - Previous: \(previousCount), New: \(newReservations.count)")
-        print("🔄 hasInitialLoad: \(hasInitialLoad)")
+        Logger.debug("🔄 handleReservationsUpdate called - Previous: \(previousCount), New: \(newReservations.count)")
+        Logger.debug("🔄 hasInitialLoad: \(hasInitialLoad)")
         reservations = newReservations
         
         // Only trigger notifications after initial load
@@ -249,9 +249,9 @@ class ReservationViewModel: ObservableObject {
         // Add the notification request
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("Failed to schedule notification: \(error.localizedDescription)")
+                Logger.debug("Failed to schedule notification: \(error.localizedDescription)")
             } else {
-                print("Notification scheduled for new reservation: \(reservation.name)")
+                Logger.debug("Notification scheduled for new reservation: \(reservation.name)")
             }
         }
     }
@@ -262,7 +262,7 @@ class ReservationViewModel: ObservableObject {
             if #available(iOS 16.0, *) {
                 UNUserNotificationCenter.current().setBadgeCount(self.newReservationCount) { error in
                     if let error = error {
-                        print("Failed to set badge count: \(error.localizedDescription)")
+                        Logger.debug("Failed to set badge count: \(error.localizedDescription)")
                     }
                 }
             } else {
@@ -314,7 +314,7 @@ class ReservationViewModel: ObservableObject {
         newReservationCount = 0
         updateAppBadge()
         
-        print("🧹 Cleared all cached reservation data")
+        Logger.debug("🧹 Cleared all cached reservation data")
     }
     
     // MARK: - Add Reservation
@@ -341,7 +341,7 @@ class ReservationViewModel: ObservableObject {
         // Get restaurant document ID from UserDefaults (same as fetchReservations)
         guard let restaurantId = UserDefaults.standard.string(forKey: "restaurantDocumentId"), !restaurantId.isEmpty else {
             completion(false, NSError(domain: "ReservationViewModel", code: -1, userInfo: [NSLocalizedDescriptionKey: "Document ID manquant. Veuillez vous reconnecter."]))
-            print("❌ No restaurant document ID found for adding reservation. User needs to reconnect.")
+            Logger.debug("❌ No restaurant document ID found for adding reservation. User needs to reconnect.")
             return
         }
         
@@ -350,8 +350,8 @@ class ReservationViewModel: ObservableObject {
             .document(restaurantId)
             .collection("reservations")
         
-        print("📝 Adding reservation to path: restaurants/\(restaurantId)/reservations")
-        print("📝 Reservation details: \(reservation.name) on \(reservation.date) at \(reservation.time)")
+        Logger.debug("📝 Adding reservation to path: restaurants/\(restaurantId)/reservations")
+        Logger.debug("📝 Reservation details: \(reservation.name) on \(reservation.date) at \(reservation.time)")
         
         // Format date for Firestore
         let dateFormatter = DateFormatter()
@@ -381,12 +381,12 @@ class ReservationViewModel: ObservableObject {
         // Add to Firestore
         reservationsRef.addDocument(data: data) { [weak self] error in
             if let error = error {
-                print("❌ Error adding reservation to Firestore: \(error.localizedDescription)")
+                Logger.debug("❌ Error adding reservation to Firestore: \(error.localizedDescription)")
                 completion(false, error)
             } else {
-                print("✅ Reservation added successfully to Firestore")
-                print("📊 Current reservation count before listener update: \(self?.reservations.count ?? 0)")
-                print("🔔 Listener should trigger automatically with new data...")
+                Logger.debug("✅ Reservation added successfully to Firestore")
+                Logger.debug("📊 Current reservation count before listener update: \(self?.reservations.count ?? 0)")
+                Logger.debug("🔔 Listener should trigger automatically with new data...")
                 completion(true, nil)
             }
         }
@@ -412,10 +412,10 @@ class ReservationViewModel: ObservableObject {
             ) { error in
                 DispatchQueue.main.async {
                     if let error = error {
-                        print("❌ Failed to update reservation: \(error.localizedDescription)")
+                        Logger.debug("❌ Failed to update reservation: \(error.localizedDescription)")
                         completion(false, error)
                     } else {
-                        print("✅ Reservation updated successfully: \(updated.id ?? "unknown")")
+                        Logger.debug("✅ Reservation updated successfully: \(updated.id ?? "unknown")")
                         completion(true, nil)
                     }
                 }
@@ -427,10 +427,10 @@ class ReservationViewModel: ObservableObject {
             ) { error in
                 DispatchQueue.main.async {
                     if let error = error {
-                        print("❌ Failed to update reservation via API: \(error.localizedDescription)")
+                        Logger.debug("❌ Failed to update reservation via API: \(error.localizedDescription)")
                         completion(false, error)
                     } else {
-                        print("✅ Reservation updated via API: \(updated.id ?? "unknown")")
+                        Logger.debug("✅ Reservation updated via API: \(updated.id ?? "unknown")")
                         completion(true, nil)
                     }
                 }
@@ -442,13 +442,13 @@ class ReservationViewModel: ObservableObject {
     
     func trackCustomer(email: String, phone: String, name: String) {
         guard restaurantManager.restaurantCode != nil else {
-            print("❌ Cannot track customer: No restaurant configured")
+            Logger.debug("❌ Cannot track customer: No restaurant configured")
             return
         }
         
         // Get restaurant document ID from UserDefaults (same as addReservation)
         guard let restaurantId = UserDefaults.standard.string(forKey: "restaurantDocumentId"), !restaurantId.isEmpty else {
-            print("❌ No restaurant document ID found for tracking customer. User needs to reconnect.")
+            Logger.debug("❌ No restaurant document ID found for tracking customer. User needs to reconnect.")
             return
         }
         
@@ -460,7 +460,7 @@ class ReservationViewModel: ObservableObject {
         // Query for existing customer by email
         customersRef.whereField("primary_email", isEqualTo: email).getDocuments { snapshot, error in
             if let error = error {
-                print("❌ Error checking for existing customer: \(error.localizedDescription)")
+                Logger.debug("❌ Error checking for existing customer: \(error.localizedDescription)")
                 return
             }
             
@@ -473,9 +473,9 @@ class ReservationViewModel: ObservableObject {
                     "primary_name": name
                 ]) { error in
                     if let error = error {
-                        print("❌ Error updating customer: \(error.localizedDescription)")
+                        Logger.debug("❌ Error updating customer: \(error.localizedDescription)")
                     } else {
-                        print("✅ Updated existing customer: \(email)")
+                        Logger.debug("✅ Updated existing customer: \(email)")
                     }
                 }
             } else {
@@ -492,9 +492,9 @@ class ReservationViewModel: ObservableObject {
                 
                 customersRef.addDocument(data: customerData) { error in
                     if let error = error {
-                        print("❌ Error creating customer: \(error.localizedDescription)")
+                        Logger.debug("❌ Error creating customer: \(error.localizedDescription)")
                     } else {
-                        print("✅ Created new customer: \(email)")
+                        Logger.debug("✅ Created new customer: \(email)")
                     }
                 }
             }
@@ -517,7 +517,7 @@ class ReservationViewModel: ObservableObject {
         
         customersRef.whereField("primary_email", isEqualTo: email).getDocuments { snapshot, error in
             if let error = error {
-                print("❌ Error finding customer for no-show increment: \(error.localizedDescription)")
+                Logger.debug("❌ Error finding customer for no-show increment: \(error.localizedDescription)")
                 return
             }
             
@@ -528,13 +528,13 @@ class ReservationViewModel: ObservableObject {
                     "updated_at": FieldValue.serverTimestamp()
                 ]) { error in
                     if let error = error {
-                        print("❌ Error incrementing no_show_count: \(error.localizedDescription)")
+                        Logger.debug("❌ Error incrementing no_show_count: \(error.localizedDescription)")
                     } else {
-                        print("✅ Incremented no_show_count for customer: \(email)")
+                        Logger.debug("✅ Incremented no_show_count for customer: \(email)")
                     }
                 }
             } else {
-                print("⚠️ No customer document found for email: \(email) — no_show_count not updated")
+                Logger.debug("⚠️ No customer document found for email: \(email) — no_show_count not updated")
             }
         }
     }

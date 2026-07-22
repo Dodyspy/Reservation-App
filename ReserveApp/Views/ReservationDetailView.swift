@@ -235,7 +235,7 @@ struct ReservationDetailView: View {
                         // Delete button - only for owner and manager
                         if authService.currentUser?.hasPermission(.deleteReservations) == true {
                             Button(action: {
-                                print("🔴 DELETE BUTTON PRESSED - Showing confirmation alert")
+                                Logger.debug("🔴 DELETE BUTTON PRESSED - Showing confirmation alert")
                                 activeAlert = .delete
                             }) {
                                 HStack {
@@ -299,11 +299,11 @@ struct ReservationDetailView: View {
                     title: Text("Supprimer la Réservation"),
                     message: Text("Êtes-vous sûr de vouloir supprimer cette réservation ? Cette action est irréversible."),
                     primaryButton: .destructive(Text("Supprimer")) {
-                        print("🔴 ALERT: Delete button tapped in confirmation dialog")
+                        Logger.debug("🔴 ALERT: Delete button tapped in confirmation dialog")
                         deleteReservation()
                     },
                     secondaryButton: .cancel {
-                        print("ℹ️ ALERT: Delete cancelled by user")
+                        Logger.debug("ℹ️ ALERT: Delete cancelled by user")
                     }
                 )
             case .cancel:
@@ -324,34 +324,34 @@ struct ReservationDetailView: View {
     }
     
     private func deleteReservation() {
-        print("🔴 DELETE BUTTON TAPPED - deleteReservation() called")
-        print("🔴 Reservation: \(reservation.name), ID: \(reservation.id ?? "nil")")
+        Logger.debug("🔴 DELETE BUTTON TAPPED - deleteReservation() called")
+        Logger.debug("🔴 Reservation: \(reservation.name), ID: \(reservation.id ?? "nil")")
         
         isDeleting = true
         
         guard let id = reservation.id else {
-            print("❌ Reservation ID is nil - cannot delete")
+            Logger.debug("❌ Reservation ID is nil - cannot delete")
             isDeleting = false
             return
         }
         
         guard let restaurantId = UserDefaults.standard.string(forKey: "restaurantDocumentId") else {
-            print("❌ Restaurant document ID not found in UserDefaults")
+            Logger.debug("❌ Restaurant document ID not found in UserDefaults")
             isDeleting = false
             return
         }
         
-        print("✅ Starting delete for ID: \(id), Restaurant: \(restaurantId)")
+        Logger.debug("✅ Starting delete for ID: \(id), Restaurant: \(restaurantId)")
         
         RestaurantService.shared.deleteReservation(reservationId: id, restaurantCode: restaurantId) { error in
             DispatchQueue.main.async {
                 isDeleting = false
                 
                 if let error = error {
-                    print("❌ DetailView: Delete failed: \(error.localizedDescription)")
+                    Logger.debug("❌ DetailView: Delete failed: \(error.localizedDescription)")
                     // Could show an error alert here
                 } else {
-                    print("✅ DetailView: Delete successful, dismissing view")
+                    Logger.debug("✅ DetailView: Delete successful, dismissing view")
                     presentationMode.wrappedValue.dismiss()
                 }
             }
@@ -390,18 +390,18 @@ struct ReservationDetailView: View {
                 isCancelling = false
                 
                 if let error = error {
-                    print("❌ Error cancelling reservation: \(error.localizedDescription)")
+                    Logger.debug("❌ Error cancelling reservation: \(error.localizedDescription)")
                     return
                 }
                 
                 if let httpResponse = response as? HTTPURLResponse,
                    httpResponse.statusCode == 200 {
-                    print("✅ Reservation cancelled successfully")
+                    Logger.debug("✅ Reservation cancelled successfully")
                     // Update local status
                     updateStatus(.cancelled)
                     presentationMode.wrappedValue.dismiss()
                 } else {
-                    print("❌ Failed to cancel reservation")
+                    Logger.debug("❌ Failed to cancel reservation")
                 }
             }
         }.resume()

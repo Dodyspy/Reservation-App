@@ -549,7 +549,7 @@ struct ReservationListView: View {
         }
         .onReceive(notificationHandler.$shouldNavigateToReservation) { shouldNavigate in
             guard shouldNavigate, let reservationId = notificationHandler.selectedReservationId else { return }
-            print("🎯 Navigating to reservation: \(reservationId)")
+            Logger.debug("🎯 Navigating to reservation: \(reservationId)")
             
             // Always switch to reservations tab first
             selectedTab = .reservations
@@ -602,14 +602,14 @@ struct ReservationListView: View {
     
     private func navigateToReservation(id reservationId: String) {
         if let reservation = viewModel.reservations.first(where: { $0.id == reservationId }) {
-            print("✅ Found reservation: \(reservation.name) on \(reservation.date)")
+            Logger.debug("✅ Found reservation: \(reservation.name) on \(reservation.date)")
             selectedDate = reservation.date
             reservationToShow = reservation
             // Navigation succeeded — clear the pending flag and badge
             notificationHandler.resetNavigation()
             viewModel.markAllNotificationsAsRead()
         } else {
-            print("⏳ Reservation not yet loaded, waiting for Firestore listener...")
+            Logger.debug("⏳ Reservation not yet loaded, waiting for Firestore listener...")
             // Don't reset notificationHandler here — onReceive(viewModel.$reservations)
             // will call this function again once data arrives.
             // Trigger a fetch in case the listener isn't active yet.
@@ -639,7 +639,7 @@ struct ReservationListView: View {
     
     private func loadServiceStatus() {
         guard let restaurantId = UserDefaults.standard.string(forKey: "restaurantDocumentId") else {
-            print("❌ No restaurant document ID found")
+            Logger.debug("❌ No restaurant document ID found")
             return
         }
         

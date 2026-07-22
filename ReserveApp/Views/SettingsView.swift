@@ -257,7 +257,7 @@ struct SettingsView: View {
         guard RestaurantManager.shared.currentRestaurant?.code != nil else { return }
         
         guard let restaurantId = UserDefaults.standard.string(forKey: "restaurantDocumentId"), !restaurantId.isEmpty else {
-            print("❌ No restaurant document ID found for loading availability")
+            Logger.debug("❌ No restaurant document ID found for loading availability")
             return
         }
         
@@ -266,7 +266,7 @@ struct SettingsView: View {
         
         restaurantRef.getDocument { snapshot, error in
             if let error = error {
-                print("Error loading availability: \(error)")
+                Logger.debug("Error loading availability: \(error)")
                 return
             }
             
@@ -290,7 +290,7 @@ struct SettingsView: View {
         guard RestaurantManager.shared.currentRestaurant?.code != nil else { return }
         
         guard let restaurantId = UserDefaults.standard.string(forKey: "restaurantDocumentId"), !restaurantId.isEmpty else {
-            print("❌ No restaurant document ID found for toggling full status")
+            Logger.debug("❌ No restaurant document ID found for toggling full status")
             return
         }
         
@@ -319,7 +319,7 @@ struct SettingsView: View {
         guard RestaurantManager.shared.currentRestaurant?.code != nil else { return }
         
         guard let restaurantId = UserDefaults.standard.string(forKey: "restaurantDocumentId"), !restaurantId.isEmpty else {
-            print("❌ No restaurant document ID found for toggling closed status")
+            Logger.debug("❌ No restaurant document ID found for toggling closed status")
             return
         }
         
@@ -348,7 +348,7 @@ struct SettingsView: View {
         guard RestaurantManager.shared.currentRestaurant?.code != nil else { return }
         
         guard let restaurantId = UserDefaults.standard.string(forKey: "restaurantDocumentId"), !restaurantId.isEmpty else {
-            print("❌ No restaurant document ID found for setting capacity override")
+            Logger.debug("❌ No restaurant document ID found for setting capacity override")
             return
         }
         

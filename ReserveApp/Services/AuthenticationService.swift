@@ -30,15 +30,15 @@ class AuthenticationService: ObservableObject {
                 if user.isAnonymous {
                     self.authenticationMode = .anonymous
                     self.isAuthenticated = true
-                    print("✅ Anonymous user authenticated")
+                    Logger.debug("✅ Anonymous user authenticated")
                 } else {
                     self.authenticationMode = .emailPassword
                     self.loadUserProfile(firebaseUid: user.uid) { result in
                         switch result {
                         case .success:
-                            print("✅ User profile loaded from auth state listener")
+                            Logger.debug("✅ User profile loaded from auth state listener")
                         case .failure(let error):
-                            print("❌ Failed to load user profile from auth state listener: \(error.localizedDescription)")
+                            Logger.debug("❌ Failed to load user profile from auth state listener: \(error.localizedDescription)")
                             // If user profile can't be loaded, show error state so user isn't stuck
                             DispatchQueue.main.async {
                                 RestaurantManager.shared.setLoadingFailed(true)
@@ -50,7 +50,7 @@ class AuthenticationService: ObservableObject {
                 self.isAuthenticated = false
                 self.currentUser = nil
                 self.authenticationMode = .anonymous
-                print("⚠️ No user authenticated")
+                Logger.debug("⚠️ No user authenticated")
             }
         }
     }
@@ -60,7 +60,7 @@ class AuthenticationService: ObservableObject {
     func signIn(email: String, password: String, completion: @escaping (Result<RestaurantUser, Error>) -> Void) {
         Auth.auth().signIn(withEmail: email, password: password) { [weak self] authResult, error in
             if let error = error {
-                print("❌ Sign in failed: \(error.localizedDescription)")
+                Logger.debug("❌ Sign in failed: \(error.localizedDescription)")
                 completion(.failure(error))
                 return
             }
@@ -73,14 +73,14 @@ class AuthenticationService: ObservableObject {
             
             // Check email verification (required by backoffice signup flow)
             if !firebaseUser.isEmailVerified {
-                print("⚠️ Email not verified for: \(firebaseUser.email ?? "unknown")")
+                Logger.debug("⚠️ Email not verified for: \(firebaseUser.email ?? "unknown")")
                 try? Auth.auth().signOut()
                 let error = NSError(domain: "AuthenticationService", code: 401, userInfo: [NSLocalizedDescriptionKey: "Veuillez vérifier votre email avant de vous connecter. Consultez votre boîte de réception."])
                 completion(.failure(error))
                 return
             }
             
-            print("✅ Firebase sign in successful: \(firebaseUser.uid)")
+            Logger.debug("✅ Firebase sign in successful: \(firebaseUser.uid)")
             self?.loadUserProfile(firebaseUid: firebaseUser.uid) { result in
                 switch result {
                 case .success(let user):
@@ -96,7 +96,7 @@ class AuthenticationService: ObservableObject {
     func createAccount(email: String, password: String, displayName: String, restaurantId: String, completion: @escaping (Result<RestaurantUser, Error>) -> Void) {
         Auth.auth().createUser(withEmail: email, password: password) { [weak self] authResult, error in
             if let error = error {
-                print("❌ Account creation failed: \(error.localizedDescription)")
+                Logger.debug("❌ Account creation failed: \(error.localizedDescription)")
                 completion(.failure(error))
                 return
             }
@@ -107,7 +107,7 @@ class AuthenticationService: ObservableObject {
                 return
             }
             
-            print("✅ Firebase account created: \(firebaseUser.uid)")
+            Logger.debug("✅ Firebase account created: \(firebaseUser.uid)")
             
             // Create user profile in Firestore
             let user = RestaurantUser(
@@ -133,10 +133,10 @@ class AuthenticationService: ObservableObject {
             self.currentUser = nil
             self.isAuthenticated = false
             self.authenticationMode = .anonymous
-            print("✅ User signed out")
+            Logger.debug("✅ User signed out")
             completion(nil)
         } catch {
-            print("❌ Sign out failed: \(error.localizedDescription)")
+            Logger.debug("❌ Sign out failed: \(error.localizedDescription)")
             completion(error)
         }
     }
@@ -144,10 +144,10 @@ class AuthenticationService: ObservableObject {
     func resetPassword(email: String, completion: @escaping (Error?) -> Void) {
         Auth.auth().sendPasswordReset(withEmail: email) { error in
             if let error = error {
-                print("❌ Password reset failed: \(error.localizedDescription)")
+                Logger.debug("❌ Password reset failed: \(error.localizedDescription)")
                 completion(error)
             } else {
-                print("✅ Password reset email sent")
+                Logger.debug("✅ Password reset email sent")
                 completion(nil)
             }
         }
@@ -159,13 +159,13 @@ class AuthenticationService: ObservableObject {
         let restaurantId = UserDefaults.standard.string(forKey: "restaurantDocumentId") ?? ""
         
         // Step 1: Check top-level 'users/' collection (backoffice-created users)
-        print("🔍 Looking for user in top-level users/ collection: \(firebaseUid)")
+        Logger.debug("🔍 Looking for user in top-level users/ collection: \(firebaseUid)")
         db.collection("users")
             .document(firebaseUid)
             .getDocument { [weak self] document, error in
                 if let document = document, document.exists, let data = document.data() {
-                    print("✅ Found user in top-level users/ collection")
-                    print("📋 User document fields: \(data.keys.sorted())")
+                    Logger.debug("✅ Found user in top-level users/ collection")
+                    Logger.debug("📋 User document fields: \(data.keys.sorted())")
                     
                     // Map backoffice user format to RestaurantUser
                     let role = self?.mapBackofficeRole(data["role"] as? String ?? "staff") ?? .staff
@@ -178,11 +178,11 @@ class AuthenticationService: ObservableObject {
                            let firstRestaurant = restaurants.first,
                            firstRestaurant != "*" {
                             userRestaurantId = firstRestaurant
-                            print("📋 Using first restaurant from array: \(userRestaurantId)")
+                            Logger.debug("📋 Using first restaurant from array: \(userRestaurantId)")
                         }
                     }
                     
-                    print("📋 restaurantId: '\(userRestaurantId)', restaurantCode: '\(userRestaurantCode)', role: \(data["role"] as? String ?? "unknown")")
+                    Logger.debug("📋 restaurantId: '\(userRestaurantId)', restaurantCode: '\(userRestaurantCode)', role: \(data["role"] as? String ?? "unknown")")
                     
                     let user = RestaurantUser(
                         id: document.documentID,
@@ -201,18 +201,18 @@ class AuthenticationService: ObservableObject {
                     
                     self?.currentUser = user
                     self?.isAuthenticated = true
-                    print("✅ User profile loaded (backoffice): \(user.displayName) (\(user.role.displayName))")
+                    Logger.debug("✅ User profile loaded (backoffice): \(user.displayName) (\(user.role.displayName))")
                     
                     // Auto-configure restaurant from user profile
                     if !userRestaurantId.isEmpty {
                         self?.autoConfigureRestaurant(restaurantId: userRestaurantId)
                     } else if !userRestaurantCode.isEmpty {
                         // Fallback: look up restaurant by code
-                        print("🔄 No restaurantId, looking up by code: \(userRestaurantCode)")
+                        Logger.debug("🔄 No restaurantId, looking up by code: \(userRestaurantCode)")
                         self?.autoConfigureRestaurantByCode(code: userRestaurantCode)
                     } else {
                         // Platform owner with no specific restaurant — find first available
-                        print("🔄 Platform owner with no restaurant — finding first available")
+                        Logger.debug("🔄 Platform owner with no restaurant — finding first available")
                         self?.autoConfigureFirstAvailableRestaurant()
                     }
                     
@@ -221,9 +221,9 @@ class AuthenticationService: ObservableObject {
                 }
                 
                 // Step 2: Fall back to restaurant subcollection (iOS-created users)
-                print("🔍 Not found in top-level, checking restaurants/\(restaurantId)/users/")
+                Logger.debug("🔍 Not found in top-level, checking restaurants/\(restaurantId)/users/")
                 guard !restaurantId.isEmpty else {
-                    print("❌ No restaurant ID found")
+                    Logger.debug("❌ No restaurant ID found")
                     let error = NSError(domain: "AuthenticationService", code: -1, userInfo: [NSLocalizedDescriptionKey: "No restaurant configured"])
                     completion?(.failure(error))
                     return
@@ -236,13 +236,13 @@ class AuthenticationService: ObservableObject {
                     .limit(to: 1)
                     .getDocuments { [weak self] snapshot, error in
                         if let error = error {
-                            print("❌ Failed to load user profile: \(error.localizedDescription)")
+                            Logger.debug("❌ Failed to load user profile: \(error.localizedDescription)")
                             completion?(.failure(error))
                             return
                         }
                         
                         guard let document = snapshot?.documents.first else {
-                            print("❌ User profile not found for UID: \(firebaseUid)")
+                            Logger.debug("❌ User profile not found for UID: \(firebaseUid)")
                             let error = NSError(domain: "AuthenticationService", code: 404, userInfo: [NSLocalizedDescriptionKey: "Profil utilisateur non trouvé. Contactez votre administrateur."])
                             completion?(.failure(error))
                             return
@@ -252,7 +252,7 @@ class AuthenticationService: ObservableObject {
                             var user = try document.data(as: RestaurantUser.self)
                             
                             if !user.isActive {
-                                print("❌ User account is deactivated")
+                                Logger.debug("❌ User account is deactivated")
                                 let error = NSError(domain: "AuthenticationService", code: 403, userInfo: [NSLocalizedDescriptionKey: "Compte désactivé"])
                                 completion?(.failure(error))
                                 return
@@ -264,10 +264,10 @@ class AuthenticationService: ObservableObject {
                             
                             self?.currentUser = user
                             self?.isAuthenticated = true
-                            print("✅ User profile loaded (restaurant): \(user.displayName) (\(user.role.displayName))")
+                            Logger.debug("✅ User profile loaded (restaurant): \(user.displayName) (\(user.role.displayName))")
                             completion?(.success(user))
                         } catch {
-                            print("❌ Failed to decode user profile: \(error)")
+                            Logger.debug("❌ Failed to decode user profile: \(error)")
                             completion?(.failure(error))
                         }
                     }
@@ -277,7 +277,7 @@ class AuthenticationService: ObservableObject {
     // MARK: - Auto Restaurant Configuration
     
     private func autoConfigureRestaurant(restaurantId: String, retryCount: Int = 0) {
-        print("🔄 Auto-configuring restaurant from user profile: \(restaurantId) (attempt \(retryCount + 1))")
+        Logger.debug("🔄 Auto-configuring restaurant from user profile: \(restaurantId) (attempt \(retryCount + 1))")
         
         // Store the document ID
         UserDefaults.standard.set(restaurantId, forKey: "restaurantDocumentId")
@@ -288,19 +288,19 @@ class AuthenticationService: ObservableObject {
                     // Store the restaurant code too
                     UserDefaults.standard.set(restaurant.code, forKey: "selectedRestaurantCode")
                     RestaurantManager.shared.setCurrentRestaurant(restaurant)
-                    print("✅ Restaurant auto-configured: \(restaurant.name) (\(restaurant.code))")
+                    Logger.debug("✅ Restaurant auto-configured: \(restaurant.name) (\(restaurant.code))")
                 } else {
-                    print("❌ Failed to auto-configure restaurant: \(error?.localizedDescription ?? "Unknown error")")
+                    Logger.debug("❌ Failed to auto-configure restaurant: \(error?.localizedDescription ?? "Unknown error")")
                     
                     // Retry up to 3 times with increasing delay
                     if retryCount < 3 {
                         let delay = Double(retryCount + 1) * 2.0
-                        print("🔄 Retrying in \(delay) seconds...")
+                        Logger.debug("🔄 Retrying in \(delay) seconds...")
                         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                             self?.autoConfigureRestaurant(restaurantId: restaurantId, retryCount: retryCount + 1)
                         }
                     } else {
-                        print("❌ All retries failed for restaurant auto-configuration")
+                        Logger.debug("❌ All retries failed for restaurant auto-configuration")
                         RestaurantManager.shared.setLoadingFailed(true)
                     }
                 }
@@ -309,7 +309,7 @@ class AuthenticationService: ObservableObject {
     }
     
     private func autoConfigureRestaurantByCode(code: String) {
-        print("🔄 Auto-configuring restaurant by code: \(code)")
+        Logger.debug("🔄 Auto-configuring restaurant by code: \(code)")
         
         RestaurantService.shared.getRestaurantByCode(code) { restaurant, documentId, error in
             DispatchQueue.main.async {
@@ -317,9 +317,9 @@ class AuthenticationService: ObservableObject {
                     UserDefaults.standard.set(documentId, forKey: "restaurantDocumentId")
                     UserDefaults.standard.set(restaurant.code, forKey: "selectedRestaurantCode")
                     RestaurantManager.shared.setCurrentRestaurant(restaurant)
-                    print("✅ Restaurant auto-configured by code: \(restaurant.name)")
+                    Logger.debug("✅ Restaurant auto-configured by code: \(restaurant.name)")
                 } else {
-                    print("❌ Failed to find restaurant by code '\(code)': \(error?.localizedDescription ?? "Unknown")")
+                    Logger.debug("❌ Failed to find restaurant by code '\(code)': \(error?.localizedDescription ?? "Unknown")")
                     RestaurantManager.shared.setLoadingFailed(true)
                 }
             }
@@ -327,7 +327,7 @@ class AuthenticationService: ObservableObject {
     }
     
     private func autoConfigureFirstAvailableRestaurant() {
-        print("🔄 Finding first available restaurant for platform owner...")
+        Logger.debug("🔄 Finding first available restaurant for platform owner...")
         
         db.collection("restaurants")
             .whereField("isActive", isEqualTo: true)
@@ -341,13 +341,13 @@ class AuthenticationService: ObservableObject {
                             UserDefaults.standard.set(documentId, forKey: "restaurantDocumentId")
                             UserDefaults.standard.set(restaurant.code, forKey: "selectedRestaurantCode")
                             RestaurantManager.shared.setCurrentRestaurant(restaurant)
-                            print("✅ Platform owner auto-configured with first restaurant: \(restaurant.name) (\(documentId))")
+                            Logger.debug("✅ Platform owner auto-configured with first restaurant: \(restaurant.name) (\(documentId))")
                         } catch {
-                            print("❌ Failed to decode restaurant: \(error)")
+                            Logger.debug("❌ Failed to decode restaurant: \(error)")
                             RestaurantManager.shared.setLoadingFailed(true)
                         }
                     } else {
-                        print("❌ No active restaurants found: \(error?.localizedDescription ?? "Empty")")
+                        Logger.debug("❌ No active restaurants found: \(error?.localizedDescription ?? "Empty")")
                         RestaurantManager.shared.setLoadingFailed(true)
                     }
                 }
@@ -380,10 +380,10 @@ class AuthenticationService: ObservableObject {
             
             try userRef.setData(from: newUser) { error in
                 if let error = error {
-                    print("❌ Failed to create user profile: \(error.localizedDescription)")
+                    Logger.debug("❌ Failed to create user profile: \(error.localizedDescription)")
                     completion(.failure(error))
                 } else {
-                    print("✅ User profile created: \(newUser.displayName)")
+                    Logger.debug("✅ User profile created: \(newUser.displayName)")
                     self.currentUser = newUser
                     self.isAuthenticated = true
                     
@@ -395,7 +395,7 @@ class AuthenticationService: ObservableObject {
                 }
             }
         } catch {
-            print("❌ Failed to encode user profile: \(error)")
+            Logger.debug("❌ Failed to encode user profile: \(error)")
             completion(.failure(error))
         }
     }
@@ -419,7 +419,7 @@ class AuthenticationService: ObservableObject {
         
         currentFirebaseUser.link(with: credential) { [weak self] authResult, error in
             if let error = error {
-                print("❌ Failed to upgrade anonymous account: \(error.localizedDescription)")
+                Logger.debug("❌ Failed to upgrade anonymous account: \(error.localizedDescription)")
                 completion(.failure(error))
                 return
             }
@@ -430,7 +430,7 @@ class AuthenticationService: ObservableObject {
                 return
             }
             
-            print("✅ Anonymous account upgraded to email/password")
+            Logger.debug("✅ Anonymous account upgraded to email/password")
             
             let user = RestaurantUser(
                 firebaseUid: firebaseUser.uid,

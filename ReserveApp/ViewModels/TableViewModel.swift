@@ -29,10 +29,10 @@ class TableViewModel: ObservableObject {
                 guard let self = self else { return }
                 
                 if let error = error {
-                    print("Firestore tables error: \(error.localizedDescription)")
+                    Logger.debug("Firestore tables error: \(error.localizedDescription)")
                     // If it's a permission error, try to initialize tables in Firebase
                     if error.localizedDescription.contains("permissions") {
-                        print("🔄 Attempting to initialize tables in Firebase...")
+                        Logger.debug("🔄 Attempting to initialize tables in Firebase...")
                         self.initializeTablesInFirebase()
                     } else {
                         self.loadDefaultTables()
@@ -41,7 +41,7 @@ class TableViewModel: ObservableObject {
                 }
                 
                 guard let documents = querySnapshot?.documents else {
-                    print("No tables found in Firestore, initializing with defaults")
+                    Logger.debug("No tables found in Firestore, initializing with defaults")
                     self.initializeTablesInFirebase()
                     return
                 }
@@ -54,16 +54,16 @@ class TableViewModel: ObservableObject {
                         let jsonData = try JSONSerialization.data(withJSONObject: data)
                         return try JSONDecoder().decode(Table.self, from: jsonData)
                     } catch {
-                        print("Error decoding table: \(error)")
+                        Logger.debug("Error decoding table: \(error)")
                         return nil
                     }
                 }
                 
                 if loadedTables.isEmpty {
-                    print("No valid tables found in Firestore, initializing with defaults")
+                    Logger.debug("No valid tables found in Firestore, initializing with defaults")
                     self.initializeTablesInFirebase()
                 } else {
-                    print("✅ Loaded \(loadedTables.count) tables from Firestore")
+                    Logger.debug("✅ Loaded \(loadedTables.count) tables from Firestore")
                     self.tables = loadedTables.sorted { $0.number < $1.number }
                     self.isLoading = false
                 }
@@ -71,7 +71,7 @@ class TableViewModel: ObservableObject {
     }
     
     private func initializeTablesInFirebase() {
-        print("🚀 Initializing tables in Firebase...")
+        Logger.debug("🚀 Initializing tables in Firebase...")
         let defaultTables = RestaurantLayout.defaultTables
         
         Task {
@@ -81,15 +81,15 @@ class TableViewModel: ObservableObject {
                     _ = try db.collection("tables").addDocument(from: table)
                     successCount += 1
                 } catch {
-                    print("❌ Failed to add table \(table.number): \(error)")
+                    Logger.debug("❌ Failed to add table \(table.number): \(error)")
                 }
             }
             
             await MainActor.run {
                 if successCount > 0 {
-                    print("✅ Successfully initialized \(successCount) tables in Firebase")
+                    Logger.debug("✅ Successfully initialized \(successCount) tables in Firebase")
                 } else {
-                    print("❌ Failed to initialize tables, using local defaults")
+                    Logger.debug("❌ Failed to initialize tables, using local defaults")
                     self.loadDefaultTables()
                 }
             }
@@ -99,9 +99,9 @@ class TableViewModel: ObservableObject {
     func addTable(_ table: Table) {
         do {
             _ = try db.collection("tables").addDocument(from: table)
-            print("✅ Added table to Firestore")
+            Logger.debug("✅ Added table to Firestore")
         } catch {
-            print("❌ Error adding table: \(error)")
+            Logger.debug("❌ Error adding table: \(error)")
             errorMessage = "Erreur d'ajout: \(error.localizedDescription)"
         }
     }
@@ -111,9 +111,9 @@ class TableViewModel: ObservableObject {
         
         do {
             try db.collection("tables").document(id).setData(from: table, merge: true)
-            print("✅ Updated table in Firestore")
+            Logger.debug("✅ Updated table in Firestore")
         } catch {
-            print("❌ Error updating table: \(error)")
+            Logger.debug("❌ Error updating table: \(error)")
             errorMessage = "Erreur de mise à jour: \(error.localizedDescription)"
         }
     }
@@ -124,10 +124,10 @@ class TableViewModel: ObservableObject {
         db.collection("tables").document(id).delete { [weak self] error in
             Task { @MainActor [weak self] in
                 if let error = error {
-                    print("❌ Error deleting table: \(error)")
+                    Logger.debug("❌ Error deleting table: \(error)")
                     self?.errorMessage = "Erreur de suppression: \(error.localizedDescription)"
                 } else {
-                    print("✅ Deleted table from Firestore")
+                    Logger.debug("✅ Deleted table from Firestore")
                 }
             }
         }
@@ -148,7 +148,7 @@ class TableViewModel: ObservableObject {
     func addCustomLocation(_ name: String) {
         // For now, we'll use the existing enum cases
         // In a full implementation, this would be stored in Firestore
-        print("Adding custom location: \(name)")
+        Logger.debug("Adding custom location: \(name)")
     }
     
     // MARK: - Helper Methods

@@ -19,7 +19,7 @@ class UserService {
             .order(by: "createdAt", descending: false)
             .getDocuments { snapshot, error in
                 if let error = error {
-                    print("❌ Failed to fetch users: \(error.localizedDescription)")
+                    Logger.debug("❌ Failed to fetch users: \(error.localizedDescription)")
                     completion(nil, error)
                     return
                 }
@@ -33,7 +33,7 @@ class UserService {
                     try? document.data(as: RestaurantUser.self)
                 }
                 
-                print("✅ Fetched \(users.count) users")
+                Logger.debug("✅ Fetched \(users.count) users")
                 completion(users, nil)
             }
     }
@@ -45,7 +45,7 @@ class UserService {
             .order(by: "createdAt", descending: false)
             .addSnapshotListener { snapshot, error in
                 if let error = error {
-                    print("❌ Users listener error: \(error.localizedDescription)")
+                    Logger.debug("❌ Users listener error: \(error.localizedDescription)")
                     completion(nil, error)
                     return
                 }
@@ -74,7 +74,7 @@ class UserService {
         
         Auth.auth().createUser(withEmail: email, password: temporaryPassword) { authResult, error in
             if let error = error {
-                print("❌ Failed to create Firebase user: \(error.localizedDescription)")
+                Logger.debug("❌ Failed to create Firebase user: \(error.localizedDescription)")
                 completion(.failure(error))
                 return
             }
@@ -106,10 +106,10 @@ class UserService {
                 
                 try userRef.setData(from: newUser) { error in
                     if let error = error {
-                        print("❌ Failed to create user profile: \(error.localizedDescription)")
+                        Logger.debug("❌ Failed to create user profile: \(error.localizedDescription)")
                         completion(.failure(error))
                     } else {
-                        print("✅ User created: \(newUser.displayName)")
+                        Logger.debug("✅ User created: \(newUser.displayName)")
                         
                         AuditService.shared.log(
                             action: .createUser,
@@ -121,14 +121,14 @@ class UserService {
                         )
                         
                         Auth.auth().sendPasswordReset(withEmail: email) { _ in
-                            print("📧 Password reset email sent to \(email)")
+                            Logger.debug("📧 Password reset email sent to \(email)")
                         }
                         
                         completion(.success(newUser))
                     }
                 }
             } catch {
-                print("❌ Failed to encode user: \(error)")
+                Logger.debug("❌ Failed to encode user: \(error)")
                 completion(.failure(error))
             }
         }
@@ -147,10 +147,10 @@ class UserService {
             .document(userId)
             .updateData(updates) { error in
                 if let error = error {
-                    print("❌ Failed to update user: \(error.localizedDescription)")
+                    Logger.debug("❌ Failed to update user: \(error.localizedDescription)")
                     completion(error)
                 } else {
-                    print("✅ User updated")
+                    Logger.debug("✅ User updated")
                     
                     AuditService.shared.log(
                         action: .updateUser,

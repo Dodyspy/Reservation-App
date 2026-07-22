@@ -114,7 +114,7 @@ struct Reservation: Identifiable, Codable {
             }
             
             date = parsedDate ?? Date()
-            print("✅ Parsed date string '\(dateString)' to: \(date)")
+            Logger.debug("✅ Parsed date string '\(dateString)' to: \(date)")
         } else {
             // Try to decode as Date object directly
             date = try container.decodeIfPresent(Date.self, forKey: .dateString) ?? Date()

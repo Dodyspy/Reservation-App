@@ -192,7 +192,7 @@ struct AddReservationView: View {
             isSaving = false
             
             if success {
-                print("✅ Manual reservation added successfully")
+                Logger.debug("✅ Manual reservation added successfully")
                 alertMessage = "Réservation créée avec succès pour \(customerName) le \(formatDate(reservationDate)) à \(reservationTime)."
                 showingAlert = true
                 
@@ -205,7 +205,7 @@ struct AddReservationView: View {
                     )
                 }
             } else {
-                print("❌ Failed to add manual reservation: \(error?.localizedDescription ?? "Unknown error")")
+                Logger.debug("❌ Failed to add manual reservation: \(error?.localizedDescription ?? "Unknown error")")
                 alertMessage = "Erreur lors de la création de la réservation. Veuillez réessayer."
                 showingAlert = true
             }

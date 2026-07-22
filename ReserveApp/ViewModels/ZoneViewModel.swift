@@ -30,25 +30,25 @@ class ZoneViewModel: ObservableObject {
                 guard let self = self else { return }
                 
                 if let error = error {
-                    print("Firebase error loading zones: \(error.localizedDescription)")
+                    Logger.debug("Firebase error loading zones: \(error.localizedDescription)")
                     self.loadDefaultZones()
                     return
                 }
                 
                 guard let documents = snapshot?.documents else {
-                    print("No zones found in Firestore, initializing with defaults")
+                    Logger.debug("No zones found in Firestore, initializing with defaults")
                     self.initializeDefaultZones()
                     return
                 }
                 
                 if documents.isEmpty {
-                    print("Empty zones collection, initializing with defaults")
+                    Logger.debug("Empty zones collection, initializing with defaults")
                     self.initializeDefaultZones()
                 } else {
                     self.zones = documents.compactMap { doc in
                         try? doc.data(as: Zone.self)
                     }
-                    print("✅ Loaded \(self.zones.count) zones from Firestore")
+                    Logger.debug("✅ Loaded \(self.zones.count) zones from Firestore")
                 }
                 
                 self.isLoading = false
@@ -58,18 +58,18 @@ class ZoneViewModel: ObservableObject {
     private func loadDefaultZones() {
         zones = Zone.defaultZones
         isLoading = false
-        print("Using default zones as fallback")
+        Logger.debug("Using default zones as fallback")
     }
     
     private func initializeDefaultZones() {
-        print("🚀 Initializing zones in Firebase...")
+        Logger.debug("🚀 Initializing zones in Firebase...")
         
         for zone in Zone.defaultZones {
             do {
                 try db.collection("zones").document(zone.id).setData(from: zone)
-                print("✅ Initialized zone: \(zone.displayName)")
+                Logger.debug("✅ Initialized zone: \(zone.displayName)")
             } catch {
-                print("❌ Failed to initialize zone \(zone.displayName): \(error)")
+                Logger.debug("❌ Failed to initialize zone \(zone.displayName): \(error)")
             }
         }
     }
@@ -79,20 +79,20 @@ class ZoneViewModel: ObservableObject {
     func addZone(_ zone: Zone) {
         do {
             try db.collection("zones").document(zone.id).setData(from: zone)
-            print("✅ Added zone: \(zone.displayName)")
+            Logger.debug("✅ Added zone: \(zone.displayName)")
         } catch {
             errorMessage = "Erreur lors de l'ajout de la zone: \(error.localizedDescription)"
-            print("❌ Failed to add zone: \(error)")
+            Logger.debug("❌ Failed to add zone: \(error)")
         }
     }
     
     func updateZone(_ zone: Zone) {
         do {
             try db.collection("zones").document(zone.id).setData(from: zone)
-            print("✅ Updated zone: \(zone.displayName)")
+            Logger.debug("✅ Updated zone: \(zone.displayName)")
         } catch {
             errorMessage = "Erreur lors de la mise à jour de la zone: \(error.localizedDescription)"
-            print("❌ Failed to update zone: \(error)")
+            Logger.debug("❌ Failed to update zone: \(error)")
         }
     }
     
@@ -106,9 +106,9 @@ class ZoneViewModel: ObservableObject {
             Task { @MainActor [weak self] in
                 if let error = error {
                     self?.errorMessage = "Erreur lors de la suppression: \(error.localizedDescription)"
-                    print("❌ Failed to delete zone: \(error)")
+                    Logger.debug("❌ Failed to delete zone: \(error)")
                 } else {
-                    print("✅ Deleted zone: \(zone.displayName)")
+                    Logger.debug("✅ Deleted zone: \(zone.displayName)")
                 }
             }
         }

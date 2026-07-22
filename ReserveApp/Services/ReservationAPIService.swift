@@ -101,13 +101,13 @@ class ReservationAPIService {
                    let message = json["message"] as? String {
                     
                     if success {
-                        print("✅ \(message)")
-                        print("✅ Reservation \(reservationId) status updated to \(status.rawValue)")
+                        Logger.debug("✅ \(message)")
+                        Logger.debug("✅ Reservation \(reservationId) status updated to \(status.rawValue)")
                         
                         if let emailSent = json["emailSent"] as? Bool, emailSent {
-                            print("✅ Confirmation email sent successfully")
+                            Logger.debug("✅ Confirmation email sent successfully")
                         } else {
-                            print("⚠️ Firestore updated but email sending failed")
+                            Logger.debug("⚠️ Firestore updated but email sending failed")
                         }
                     }
                 }

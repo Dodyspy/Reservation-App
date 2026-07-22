@@ -13,7 +13,7 @@ class RestaurantService {
     // MARK: - Restaurant Management
     
     func getRestaurantByCode(_ code: String, completion: @escaping (Restaurant?, String?, Error?) -> Void) {
-        print("🔍 Looking up restaurant with code: \(code)")
+        Logger.debug("🔍 Looking up restaurant with code: \(code)")
         
         db.collection(restaurantsCollection)
             .whereField("code", isEqualTo: code.uppercased())
@@ -21,13 +21,13 @@ class RestaurantService {
             .limit(to: 1)
             .getDocuments { snapshot, error in
                 if let error = error {
-                    print("❌ Error fetching restaurant: \(error.localizedDescription)")
+                    Logger.debug("❌ Error fetching restaurant: \(error.localizedDescription)")
                     completion(nil, nil, error)
                     return
                 }
                 
                 guard let document = snapshot?.documents.first else {
-                    print("❌ No restaurant found with code: \(code)")
+                    Logger.debug("❌ No restaurant found with code: \(code)")
                     let notFoundError = NSError(
                         domain: "RestaurantService",
                         code: 404,
@@ -40,30 +40,30 @@ class RestaurantService {
                 do {
                     let restaurant = try document.data(as: Restaurant.self)
                     let documentId = document.documentID
-                    print("✅ Found restaurant: \(restaurant.name)")
-                    print("📄 Document ID: \(documentId)")
+                    Logger.debug("✅ Found restaurant: \(restaurant.name)")
+                    Logger.debug("📄 Document ID: \(documentId)")
                     completion(restaurant, documentId, nil)
                 } catch {
-                    print("❌ Error decoding restaurant: \(error)")
+                    Logger.debug("❌ Error decoding restaurant: \(error)")
                     completion(nil, nil, error)
                 }
             }
     }
     
     func getRestaurantById(_ documentId: String, completion: @escaping (Restaurant?, Error?) -> Void) {
-        print("🔍 Looking up restaurant by document ID: \(documentId)")
+        Logger.debug("🔍 Looking up restaurant by document ID: \(documentId)")
         
         db.collection(restaurantsCollection)
             .document(documentId)
             .getDocument { snapshot, error in
                 if let error = error {
-                    print("❌ Error fetching restaurant by ID: \(error.localizedDescription)")
+                    Logger.debug("❌ Error fetching restaurant by ID: \(error.localizedDescription)")
                     completion(nil, error)
                     return
                 }
                 
                 guard let snapshot = snapshot, snapshot.exists else {
-                    print("❌ No restaurant found with ID: \(documentId)")
+                    Logger.debug("❌ No restaurant found with ID: \(documentId)")
                     let notFoundError = NSError(
                         domain: "RestaurantService",
                         code: 404,
@@ -75,10 +75,10 @@ class RestaurantService {
                 
                 do {
                     let restaurant = try snapshot.data(as: Restaurant.self)
-                    print("✅ Found restaurant by ID: \(restaurant.name)")
+                    Logger.debug("✅ Found restaurant by ID: \(restaurant.name)")
                     completion(restaurant, nil)
                 } catch {
-                    print("❌ Error decoding restaurant: \(error)")
+                    Logger.debug("❌ Error decoding restaurant: \(error)")
                     completion(nil, error)
                 }
             }
@@ -87,19 +87,19 @@ class RestaurantService {
     // MARK: - Real-time Restaurant Settings Listener
     
     func listenToRestaurantSettings(restaurantId: String, completion: @escaping (Restaurant?, Error?) -> Void) -> ListenerRegistration {
-        print("🎧 Setting up real-time listener for restaurant settings: \(restaurantId)")
+        Logger.debug("🎧 Setting up real-time listener for restaurant settings: \(restaurantId)")
         
         return db.collection(restaurantsCollection)
             .document(restaurantId)
             .addSnapshotListener { snapshot, error in
                 if let error = error {
-                    print("❌ Restaurant settings listener error: \(error.localizedDescription)")
+                    Logger.debug("❌ Restaurant settings listener error: \(error.localizedDescription)")
                     completion(nil, error)
                     return
                 }
                 
                 guard let snapshot = snapshot, snapshot.exists else {
-                    print("⚠️ Restaurant document no longer exists")
+                    Logger.debug("⚠️ Restaurant document no longer exists")
                     let notFoundError = NSError(
                         domain: "RestaurantService",
                         code: 404,
@@ -111,11 +111,11 @@ class RestaurantService {
                 
                 do {
                     let restaurant = try snapshot.data(as: Restaurant.self)
-                    print("✅ Restaurant settings updated: \(restaurant.name)")
-                    print("📊 Status - Closed: \(restaurant.isTemporarilyClosed), Full: \(restaurant.isRestaurantFull)")
+                    Logger.debug("✅ Restaurant settings updated: \(restaurant.name)")
+                    Logger.debug("📊 Status - Closed: \(restaurant.isTemporarilyClosed), Full: \(restaurant.isRestaurantFull)")
                     completion(restaurant, nil)
                 } catch {
-                    print("❌ Error decoding restaurant settings: \(error)")
+                    Logger.debug("❌ Error decoding restaurant settings: \(error)")
                     completion(nil, error)
                 }
             }
@@ -126,15 +126,15 @@ class RestaurantService {
             let documentRef = try db.collection(restaurantsCollection).addDocument(from: restaurant)
             documentRef.getDocument { _, error in
                 if let error = error {
-                    print("❌ Error creating restaurant: \(error.localizedDescription)")
+                    Logger.debug("❌ Error creating restaurant: \(error.localizedDescription)")
                     completion(nil, error)
                 } else {
-                    print("✅ Restaurant created successfully")
+                    Logger.debug("✅ Restaurant created successfully")
                     completion(documentRef.documentID, nil)
                 }
             }
         } catch {
-            print("❌ Error encoding restaurant: \(error)")
+            Logger.debug("❌ Error encoding restaurant: \(error)")
             completion(nil, error)
         }
     }
@@ -223,37 +223,37 @@ class RestaurantService {
     func listenForReservations(for restaurantCode: String, completion: @escaping ([Reservation]?, Error?) -> Void) -> ListenerRegistration {
         let collection = getReservationsCollection(for: restaurantCode)
         
-        print("🎧 Setting up listener on path: restaurants/\(restaurantCode)/reservations")
+        Logger.debug("🎧 Setting up listener on path: restaurants/\(restaurantCode)/reservations")
         
         return collection
             .order(by: "createdAt", descending: true)
             .addSnapshotListener { snapshot, error in
                 if let error = error {
-                    print("❌ Listener error: \(error.localizedDescription)")
+                    Logger.debug("❌ Listener error: \(error.localizedDescription)")
                     completion(nil, error)
                     return
                 }
                 
                 guard let documents = snapshot?.documents else {
-                    print("⚠️ Listener received empty snapshot")
+                    Logger.debug("⚠️ Listener received empty snapshot")
                     completion([], nil)
                     return
                 }
                 
-                print("📦 Listener received \(documents.count) documents from Firestore")
+                Logger.debug("📦 Listener received \(documents.count) documents from Firestore")
                 
                 let reservations = documents.compactMap { document -> Reservation? in
                     do {
                         let reservation = try document.data(as: Reservation.self)
-                        print("✅ Parsed reservation: \(reservation.name) - \(reservation.date)")
+                        Logger.debug("✅ Parsed reservation: \(reservation.name) - \(reservation.date)")
                         return reservation
                     } catch {
-                        print("❌ Failed to parse reservation document \(document.documentID): \(error)")
+                        Logger.debug("❌ Failed to parse reservation document \(document.documentID): \(error)")
                         return nil
                     }
                 }
                 
-                print("🎯 Returning \(reservations.count) parsed reservations to listener callback")
+                Logger.debug("🎯 Returning \(reservations.count) parsed reservations to listener callback")
                 completion(reservations, nil)
             }
     }
@@ -288,7 +288,7 @@ class RestaurantService {
         let baseURL = AppConfig.shared.cloudFunctionBaseURL
         guard !baseURL.isEmpty,
               let url = URL(string: "\(baseURL)/recalculateAvailability") else {
-            print("⚠️ Invalid Cloud Function base URL in Config.plist")
+            Logger.debug("⚠️ Invalid Cloud Function base URL in Config.plist")
             return
         }
         var request = URLRequest(url: url)
@@ -304,9 +304,9 @@ class RestaurantService {
         
         URLSession.shared.dataTask(with: request) { data, response, error in
             if let error = error {
-                print("⚠️ Failed to trigger availability recalculation: \(error.localizedDescription)")
+                Logger.debug("⚠️ Failed to trigger availability recalculation: \(error.localizedDescription)")
             } else {
-                print("✅ Availability recalculation triggered")
+                Logger.debug("✅ Availability recalculation triggered")
             }
         }.resume()
     }
@@ -314,16 +314,16 @@ class RestaurantService {
     func deleteReservation(reservationId: String, restaurantCode: String, completion: @escaping (Error?) -> Void) {
         let collection = getReservationsCollection(for: restaurantCode)
         
-        print("🗑️ Attempting to delete reservation: \(reservationId)")
-        print("📍 Delete path: restaurants/\(restaurantCode)/reservations/\(reservationId)")
+        Logger.debug("🗑️ Attempting to delete reservation: \(reservationId)")
+        Logger.debug("📍 Delete path: restaurants/\(restaurantCode)/reservations/\(reservationId)")
         
         collection
             .document(reservationId)
             .delete { error in
                 if let error = error {
-                    print("❌ Failed to delete reservation: \(error.localizedDescription)")
+                    Logger.debug("❌ Failed to delete reservation: \(error.localizedDescription)")
                 } else {
-                    print("✅ Successfully deleted reservation: \(reservationId)")
+                    Logger.debug("✅ Successfully deleted reservation: \(reservationId)")
                 }
                 completion(error)
             }
@@ -445,7 +445,7 @@ class RestaurantService {
             .limit(to: 1)
             .getDocuments { snapshot, error in
                 if let error = error {
-                    print("❌ Firestore query error: \(error)")
+                    Logger.debug("❌ Firestore query error: \(error)")
                 }
                 
                 if let customer = snapshot?.documents.first {
@@ -454,7 +454,7 @@ class RestaurantService {
                         completion(CustomerHistory(customer: customerData))
                         return
                     } catch {
-                        print("❌ Error decoding customer by email: \(error)")
+                        Logger.debug("❌ Error decoding customer by email: \(error)")
                     }
                 }
                 
@@ -469,7 +469,7 @@ class RestaurantService {
                                 completion(CustomerHistory(customer: customerData))
                                 return
                             } catch {
-                                print("❌ Error decoding customer by phone: \(error)")
+                                Logger.debug("❌ Error decoding customer by phone: \(error)")
                             }
                         }
                         
@@ -537,10 +537,10 @@ class RestaurantService {
                 .document(restaurantId)
                 .updateData(updates) { error in
                     if let error = error {
-                        print("❌ Failed to toggle \(service.displayName) for \(date): \(error.localizedDescription)")
+                        Logger.debug("❌ Failed to toggle \(service.displayName) for \(date): \(error.localizedDescription)")
                         completion(false, error)
                     } else {
-                        print("✅ \(service.displayName) for \(date) set to: \(newStatus ? "closed" : "open")")
+                        Logger.debug("✅ \(service.displayName) for \(date) set to: \(newStatus ? "closed" : "open")")
                         completion(newStatus, nil)
                     }
                 }
@@ -565,9 +565,9 @@ class RestaurantService {
             .document(restaurantId)
             .updateData(updates) { error in
                 if let error = error {
-                    print("❌ Failed to update \(service.displayName) for \(date): \(error.localizedDescription)")
+                    Logger.debug("❌ Failed to update \(service.displayName) for \(date): \(error.localizedDescription)")
                 } else {
-                    print("✅ \(service.displayName) for \(date) set to: \(isClosed ? "closed" : "open")")
+                    Logger.debug("✅ \(service.displayName) for \(date) set to: \(isClosed ? "closed" : "open")")
                 }
                 completion(error)
             }

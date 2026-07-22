@@ -25,13 +25,13 @@ class AuditService {
                 .collection("auditLog")
                 .addDocument(from: entry) { error in
                     if let error = error {
-                        print("❌ Failed to log audit entry: \(error.localizedDescription)")
+                        Logger.debug("❌ Failed to log audit entry: \(error.localizedDescription)")
                     } else {
-                        print("📝 Audit logged: \(action.displayName) by \(user.displayName)")
+                        Logger.debug("📝 Audit logged: \(action.displayName) by \(user.displayName)")
                     }
                 }
         } catch {
-            print("❌ Failed to encode audit entry: \(error)")
+            Logger.debug("❌ Failed to encode audit entry: \(error)")
         }
     }
     
@@ -43,7 +43,7 @@ class AuditService {
             .limit(to: limit)
             .getDocuments { snapshot, error in
                 if let error = error {
-                    print("❌ Failed to fetch audit log: \(error.localizedDescription)")
+                    Logger.debug("❌ Failed to fetch audit log: \(error.localizedDescription)")
                     completion(nil, error)
                     return
                 }
@@ -57,7 +57,7 @@ class AuditService {
                     try? document.data(as: AuditLogEntry.self)
                 }
                 
-                print("✅ Fetched \(entries.count) audit log entries")
+                Logger.debug("✅ Fetched \(entries.count) audit log entries")
                 completion(entries, nil)
             }
     }
@@ -70,7 +70,7 @@ class AuditService {
             .limit(to: limit)
             .addSnapshotListener { snapshot, error in
                 if let error = error {
-                    print("❌ Audit log listener error: \(error.localizedDescription)")
+                    Logger.debug("❌ Audit log listener error: \(error.localizedDescription)")
                     completion(nil, error)
                     return
                 }
@@ -97,7 +97,7 @@ class AuditService {
             .whereField("timestamp", isLessThan: cutoffDate)
             .getDocuments { snapshot, error in
                 if let error = error {
-                    print("❌ Failed to fetch old logs: \(error.localizedDescription)")
+                    Logger.debug("❌ Failed to fetch old logs: \(error.localizedDescription)")
                     completion(error)
                     return
                 }
@@ -112,9 +112,9 @@ class AuditService {
                 
                 batch.commit { error in
                     if let error = error {
-                        print("❌ Failed to delete old logs: \(error.localizedDescription)")
+                        Logger.debug("❌ Failed to delete old logs: \(error.localizedDescription)")
                     } else {
-                        print("✅ Deleted \(documents.count) old audit log entries")
+                        Logger.debug("✅ Deleted \(documents.count) old audit log entries")
                     }
                     completion(error)
                 }

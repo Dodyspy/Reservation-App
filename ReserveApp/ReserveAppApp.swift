@@ -21,21 +21,21 @@ struct ReserveAppApp: App {
     @Environment(\.scenePhase) private var scenePhase
     
     init() {
-        NSLog("============================================================")
-        NSLog("🚀 ReserveApp STARTING")
-        NSLog("📱 Bundle ID: %@", Bundle.main.bundleIdentifier ?? "unknown")
-        NSLog("📱 App Version: %@", Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown")
-        NSLog("📱 iOS Version: %@", UIDevice.current.systemVersion)
-        NSLog("📱 Device: %@", UIDevice.current.model)
-        NSLog("============================================================")
+        Logger.debug("============================================================")
+        Logger.debug("🚀 ReserveApp STARTING")
+        Logger.debug("📱 Bundle ID: %@", Bundle.main.bundleIdentifier ?? "unknown")
+        Logger.debug("📱 App Version: %@", Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown")
+        Logger.debug("📱 iOS Version: %@", UIDevice.current.systemVersion)
+        Logger.debug("📱 Device: %@", UIDevice.current.model)
+        Logger.debug("============================================================")
         
-        print(String(repeating: "=", count: 60))
-        print("🚀 ReserveApp STARTING")
-        print("📱 Bundle ID: \(Bundle.main.bundleIdentifier ?? "unknown")")
-        print("📱 App Version: \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown")")
-        print("📱 iOS Version: \(UIDevice.current.systemVersion)")
-        print("📱 Device: \(UIDevice.current.model)")
-        print(String(repeating: "=", count: 60))
+        Logger.debug(String(repeating: "=", count: 60))
+        Logger.debug("🚀 ReserveApp STARTING")
+        Logger.debug("📱 Bundle ID: \(Bundle.main.bundleIdentifier ?? "unknown")")
+        Logger.debug("📱 App Version: \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "unknown")")
+        Logger.debug("📱 iOS Version: \(UIDevice.current.systemVersion)")
+        Logger.debug("📱 Device: \(UIDevice.current.model)")
+        Logger.debug(String(repeating: "=", count: 60))
     }
     
     var body: some Scene {
@@ -110,7 +110,7 @@ struct ReserveAppApp: App {
                         // Safety timeout: if restaurant isn't loaded after 15 seconds, show error
                         DispatchQueue.main.asyncAfter(deadline: .now() + 15.0) {
                             if !restaurantManager.isConfigured && !restaurantManager.loadingFailed {
-                                print("⏰ Loading timeout - showing error state")
+                                Logger.debug("⏰ Loading timeout - showing error state")
                                 restaurantManager.loadingFailed = true
                             }
                         }
@@ -137,7 +137,7 @@ struct ReserveAppApp: App {
         if #available(iOS 16.0, *) {
             UNUserNotificationCenter.current().setBadgeCount(0) { error in
                 if let error = error {
-                    print("⚠️ Failed to clear badge: \(error.localizedDescription)")
+                    Logger.debug("⚠️ Failed to clear badge: \(error.localizedDescription)")
                 }
             }
         } else {
@@ -146,7 +146,7 @@ struct ReserveAppApp: App {
         
         // Remove all delivered notifications from Notification Center
         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
-        print("🔔 Badge cleared and delivered notifications removed")
+        Logger.debug("🔔 Badge cleared and delivered notifications removed")
     }
 }
 
@@ -163,7 +163,7 @@ class NotificationHandler: ObservableObject {
         DispatchQueue.main.async {
             self.selectedReservationId = reservationId
             self.shouldNavigateToReservation = true
-            print("🎯 Navigation triggered for reservation: \(reservationId)")
+            Logger.debug("🎯 Navigation triggered for reservation: \(reservationId)")
         }
     }
     
@@ -177,8 +177,8 @@ class NotificationHandler: ObservableObject {
 
 class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        NSLog("🚀 App launching - configuring Firebase and notifications...")
-        print("🚀 App launching - configuring Firebase and notifications...")
+        Logger.debug("🚀 App launching - configuring Firebase and notifications...")
+        Logger.debug("🚀 App launching - configuring Firebase and notifications...")
         
         // Configure Firebase first (fast, synchronous)
         FirebaseApp.configure()
@@ -190,10 +190,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let settings = FirestoreSettings()
         if AppConfig.shared.enableOfflinePersistence {
             settings.cacheSettings = PersistentCacheSettings()
-            print("✅ Firestore offline persistence enabled")
+            Logger.debug("✅ Firestore offline persistence enabled")
         } else {
             settings.cacheSettings = MemoryCacheSettings()
-            print("⚠️ Firestore using memory cache only")
+            Logger.debug("⚠️ Firestore using memory cache only")
         }
         
         #if DEBUG
@@ -210,9 +210,9 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         DispatchQueue.global(qos: .userInitiated).async {
             Firestore.firestore().enableNetwork { error in
                 if let error = error {
-                    print("⚠️ Firestore network enable error: \(error.localizedDescription)")
+                    Logger.debug("⚠️ Firestore network enable error: \(error.localizedDescription)")
                 } else {
-                    print("✅ Firestore network enabled")
+                    Logger.debug("✅ Firestore network enabled")
                 }
             }
         }
@@ -221,7 +221,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let hasRestaurantCode = UserDefaults.standard.string(forKey: "selectedRestaurantCode") != nil
         
         if hasRestaurantCode {
-            print("✅ Restaurant code found - initializing for this restaurant")
+            Logger.debug("✅ Restaurant code found - initializing for this restaurant")
             
             DispatchQueue.global(qos: .userInitiated).async {
                 // Request notification permission
@@ -233,8 +233,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 RestaurantManager.shared.loadSavedRestaurantAfterFirebaseInit()
             }
         } else {
-            print("ℹ️ No restaurant code in UserDefaults")
-            print("ℹ️ Auth listener will handle restaurant loading if user is already authenticated via Keychain")
+            Logger.debug("ℹ️ No restaurant code in UserDefaults")
+            Logger.debug("ℹ️ Auth listener will handle restaurant loading if user is already authenticated via Keychain")
         }
         
         return true
@@ -243,20 +243,20 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     // APNS and FCM methods for push notifications
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         // Use NSLog to ensure this is visible
-        NSLog("🎉🎉🎉 SUCCESS: APNS device token received!")
-        NSLog("🔑 Token: %@", deviceToken.map { String(format: "%02.2hhx", $0) }.joined())
+        Logger.debug("🎉🎉🎉 SUCCESS: APNS device token received!")
+        Logger.debug("🔑 Token: %@", deviceToken.map { String(format: "%02.2hhx", $0) }.joined())
         
-        print("🎉 APNS device token received: \(deviceToken.map { String(format: "%02.2hhx", $0) }.joined())")
-        print("📱 Token length: \(deviceToken.count) bytes")
+        Logger.debug("🎉 APNS device token received: \(deviceToken.map { String(format: "%02.2hhx", $0) }.joined())")
+        Logger.debug("📱 Token length: \(deviceToken.count) bytes")
         Messaging.messaging().apnsToken = deviceToken
-        print("✅ APNS device token registered with Firebase Messaging")
+        Logger.debug("✅ APNS device token registered with Firebase Messaging")
         
         // Force refresh FCM token now that APNS token is available
         Messaging.messaging().token { token, error in
             if let error = error {
-                print("❌ Error fetching FCM token: \(error)")
+                Logger.debug("❌ Error fetching FCM token: \(error)")
             } else if let token = token {
-                print("🔑 FCM token refreshed after APNS registration: \(token)")
+                Logger.debug("🔑 FCM token refreshed after APNS registration: \(token)")
                 
                 // Try to subscribe to restaurant-specific topic again now that we have APNS token
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
@@ -267,16 +267,16 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
     
     func application(_ application: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        // Use NSLog to ensure this is visible even if print() is suppressed
-        NSLog("❌❌❌ CRITICAL: Failed to register for remote notifications")
-        NSLog("❌ Error: %@", error.localizedDescription)
-        NSLog("❌ Full error: %@", error as NSError)
+        // Use NSLog to ensure this is visible even if Logger.debug() is suppressed
+        Logger.debug("❌❌❌ CRITICAL: Failed to register for remote notifications")
+        Logger.debug("❌ Error: %@", error.localizedDescription)
+        Logger.debug("❌ Full error: %@", error as NSError)
         
-        print("❌ Failed to register for remote notifications: \(error.localizedDescription)")
-        print("❌ Error details: \(error)")
-        print("❌ Error domain: \((error as NSError).domain)")
-        print("❌ Error code: \((error as NSError).code)")
-        print("❌ Error userInfo: \((error as NSError).userInfo)")
+        Logger.debug("❌ Failed to register for remote notifications: \(error.localizedDescription)")
+        Logger.debug("❌ Error details: \(error)")
+        Logger.debug("❌ Error domain: \((error as NSError).domain)")
+        Logger.debug("❌ Error code: \((error as NSError).code)")
+        Logger.debug("❌ Error userInfo: \((error as NSError).userInfo)")
         
         // Common error meanings:
         // - "no valid 'aps-environment' entitlement" = Provisioning profile issue
@@ -286,15 +286,15 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         // Check specific error conditions
         let nsError = error as NSError
         if nsError.domain == "NSCocoaErrorDomain" && nsError.code == 3010 {
-            print("🔧 SOLUTION: Enable Push Notifications capability in Xcode project")
+            Logger.debug("🔧 SOLUTION: Enable Push Notifications capability in Xcode project")
         }
         
         // Additional diagnostic info
-        print("📱 Device info for debugging:")
-        print("   - Model: \(UIDevice.current.model)")
-        print("   - System: \(UIDevice.current.systemVersion)")
-        print("   - Name: \(UIDevice.current.name)")
-        print("   - ID: \(UIDevice.current.identifierForVendor?.uuidString ?? "unknown")")
+        Logger.debug("📱 Device info for debugging:")
+        Logger.debug("   - Model: \(UIDevice.current.model)")
+        Logger.debug("   - System: \(UIDevice.current.systemVersion)")
+        Logger.debug("   - Name: \(UIDevice.current.name)")
+        Logger.debug("   - ID: \(UIDevice.current.identifierForVendor?.uuidString ?? "unknown")")
     }
     
     // REMOVED: didReceiveRemoteNotification handler
@@ -309,7 +309,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             application.applicationIconBadgeNumber = 0
         }
         UNUserNotificationCenter.current().removeAllDeliveredNotifications()
-        print("🔔 AppDelegate: Badge cleared on become active")
+        Logger.debug("🔔 AppDelegate: Badge cleared on become active")
     }
 }
 
@@ -317,7 +317,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 extension AppDelegate: MessagingDelegate {
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
         guard let token = fcmToken else { return }
-        print("🔑 Firebase registration token: \(token)")
+        Logger.debug("🔑 Firebase registration token: \(token)")
         
         // Store the token in Firestore for direct device messaging
         storeDeviceToken(token)
@@ -335,7 +335,7 @@ extension AppDelegate: MessagingDelegate {
         // Store device token in Firestore for direct push notifications
         // Get restaurant document ID from UserDefaults
         guard let restaurantId = UserDefaults.standard.string(forKey: "restaurantDocumentId"), !restaurantId.isEmpty else {
-            print("❌ No restaurant document ID found for storing device token")
+            Logger.debug("❌ No restaurant document ID found for storing device token")
             return
         }
         
@@ -357,9 +357,9 @@ extension AppDelegate: MessagingDelegate {
             .document(deviceId)
             .setData(deviceData) { error in
                 if let error = error {
-                    print("❌ Failed to store device token: \(error.localizedDescription)")
+                    Logger.debug("❌ Failed to store device token: \(error.localizedDescription)")
                 } else {
-                    print("✅ Device token stored successfully for direct push notifications")
+                    Logger.debug("✅ Device token stored successfully for direct push notifications")
                 }
             }
     }
@@ -381,19 +381,19 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         let body = notification.request.content.body
         let userInfo = notification.request.content.userInfo
         
-        NSLog("📬 ========== FOREGROUND NOTIFICATION ==========")
-        NSLog("📬 Identifier: %@", identifier)
-        NSLog("📬 Title: %@", title)
-        NSLog("📬 Body: %@", body)
-        NSLog("📬 UserInfo: %@", String(describing: userInfo))
-        NSLog("📬 =============================================")
+        Logger.debug("📬 ========== FOREGROUND NOTIFICATION ==========")
+        Logger.debug("📬 Identifier: %@", identifier)
+        Logger.debug("📬 Title: %@", title)
+        Logger.debug("📬 Body: %@", body)
+        Logger.debug("📬 UserInfo: %@", String(describing: userInfo))
+        Logger.debug("📬 =============================================")
         
-        print("📬 Notification received in foreground: \(title)")
-        print("📬 Notification identifier: \(identifier)")
-        print("📬 Notification body: \(body)")
-        print("📬 FULL UserInfo dump:")
+        Logger.debug("📬 Notification received in foreground: \(title)")
+        Logger.debug("📬 Notification identifier: \(identifier)")
+        Logger.debug("📬 Notification body: \(body)")
+        Logger.debug("📬 FULL UserInfo dump:")
         for (key, value) in userInfo {
-            print("   - \(key): \(value)")
+            Logger.debug("   - \(key): \(value)")
         }
         
         // Check for duplicate based on reservationId + notification type (within the recent window)
@@ -402,7 +402,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
             let notificationType = userInfo["type"] as? String ?? "unknown"
             let dedupKey = "\(notificationType)_\(reservationId)"
             if AppDelegate.processedNotificationIds.contains(dedupKey) {
-                print("⚠️ DUPLICATE NOTIFICATION DETECTED - Suppressing: \(dedupKey)")
+                Logger.debug("⚠️ DUPLICATE NOTIFICATION DETECTED - Suppressing: \(dedupKey)")
                 completionHandler([]) // Don't show duplicate
                 return
             }
@@ -411,7 +411,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
             if AppDelegate.processedNotificationIds.count > AppDelegate.maxProcessedIds {
                 AppDelegate.processedNotificationIds.removeFirst()
             }
-            print("✅ New notification - will display: \(dedupKey)")
+            Logger.debug("✅ New notification - will display: \(dedupKey)")
         }
         
         // Show notification even when app is in foreground
@@ -422,15 +422,15 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
-        NSLog("👆 User tapped notification")
-        print("👆 User tapped notification: \(response.notification.request.content.title)")
+        Logger.debug("👆 User tapped notification")
+        Logger.debug("👆 User tapped notification: \(response.notification.request.content.title)")
         
         let userInfo = response.notification.request.content.userInfo
-        print("📦 Notification data: \(userInfo)")
+        Logger.debug("📦 Notification data: \(userInfo)")
         
         // Handle the notification tap - navigate to specific reservation
         if let reservationId = userInfo["reservationId"] as? String {
-            print("🎯 Opening reservation: \(reservationId)")
+            Logger.debug("🎯 Opening reservation: \(reservationId)")
             NotificationHandler.shared.handleNotificationTap(reservationId: reservationId)
         }
         

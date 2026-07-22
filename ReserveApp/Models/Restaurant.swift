@@ -290,7 +290,7 @@ class RestaurantManager: ObservableObject {
     
     private init() {
         // Don't load restaurant immediately - wait for Firebase to be configured
-        print("🏪 RestaurantManager initialized - waiting for Firebase configuration")
+        Logger.debug("🏪 RestaurantManager initialized - waiting for Firebase configuration")
     }
     
     func setLoadingFailed(_ failed: Bool) {
@@ -308,7 +308,7 @@ class RestaurantManager: ObservableObject {
         isConfigured = true
         UserDefaults.standard.set(restaurant.code, forKey: "selectedRestaurantCode")
         
-        print("✅ Restaurant configured: \(restaurant.name) (\(restaurant.code))")
+        Logger.debug("✅ Restaurant configured: \(restaurant.name) (\(restaurant.code))")
         
         // Initialize Firebase for this restaurant (if not already done)
         initializeFirebaseForRestaurant()
@@ -318,24 +318,24 @@ class RestaurantManager: ObservableObject {
     }
     
     private func initializeFirebaseForRestaurant() {
-        print("🔍 initializeFirebaseForRestaurant called - hasInitialized: \(hasInitialized)")
+        Logger.debug("🔍 initializeFirebaseForRestaurant called - hasInitialized: \(hasInitialized)")
         
         // Prevent duplicate initialization
         guard !hasInitialized else {
-            print("⚠️ Firebase already initialized for restaurant - skipping duplicate initialization")
+            Logger.debug("⚠️ Firebase already initialized for restaurant - skipping duplicate initialization")
             return
         }
         
         hasInitialized = true
-        print("🔄 Initializing Firebase for restaurant...")
+        Logger.debug("🔄 Initializing Firebase for restaurant...")
         
         // Enable Firestore network in background
         DispatchQueue.global(qos: .userInitiated).async {
             Firestore.firestore().enableNetwork { error in
                 if let error = error {
-                    print("⚠️ Firestore network enable error: \(error.localizedDescription)")
+                    Logger.debug("⚠️ Firestore network enable error: \(error.localizedDescription)")
                 } else {
-                    print("✅ Firestore network enabled for restaurant")
+                    Logger.debug("✅ Firestore network enabled for restaurant")
                 }
             }
             
@@ -370,16 +370,16 @@ class RestaurantManager: ObservableObject {
         currentRestaurant = nil
         isConfigured = false
         UserDefaults.standard.removeObject(forKey: "selectedRestaurantCode")
-        print("🔄 Restaurant cleared - app will show setup screen")
+        Logger.debug("🔄 Restaurant cleared - app will show setup screen")
     }
     
     private func loadSavedRestaurant() {
         guard let savedCode = userDefaults.string(forKey: restaurantCodeKey) else {
-            print("ℹ️ No saved restaurant code found")
+            Logger.debug("ℹ️ No saved restaurant code found")
             return
         }
         
-        print("🔍 Loading saved restaurant with code: \(savedCode)")
+        Logger.debug("🔍 Loading saved restaurant with code: \(savedCode)")
         
         // Load restaurant from Firebase
         RestaurantService.shared.getRestaurantByCode(savedCode) { [weak self] restaurant, documentId, error in
@@ -387,12 +387,12 @@ class RestaurantManager: ObservableObject {
                 if let restaurant = restaurant, let documentId = documentId {
                     // Store document ID
                     UserDefaults.standard.set(documentId, forKey: "restaurantDocumentId")
-                    print("✅ Stored document ID: \(documentId)")
+                    Logger.debug("✅ Stored document ID: \(documentId)")
                     
                     self?.setCurrentRestaurant(restaurant)
-                    print("✅ Restored restaurant: \(restaurant.name)")
+                    Logger.debug("✅ Restored restaurant: \(restaurant.name)")
                 } else {
-                    print("❌ Failed to load saved restaurant: \(error?.localizedDescription ?? "Unknown error")")
+                    Logger.debug("❌ Failed to load saved restaurant: \(error?.localizedDescription ?? "Unknown error")")
                     self?.clearCurrentRestaurant()
                 }
             }
@@ -420,32 +420,32 @@ class RestaurantManager: ObservableObject {
     
     private func startListeningToRestaurantSettings() {
         guard let restaurantId = UserDefaults.standard.string(forKey: "restaurantDocumentId") else {
-            print("⚠️ Cannot start settings listener: No restaurant document ID")
+            Logger.debug("⚠️ Cannot start settings listener: No restaurant document ID")
             return
         }
         
         // Remove existing listener if any
         restaurantSettingsListener?.remove()
         
-        print("🎧 Starting real-time listener for restaurant settings")
+        Logger.debug("🎧 Starting real-time listener for restaurant settings")
         
         restaurantSettingsListener = RestaurantService.shared.listenToRestaurantSettings(restaurantId: restaurantId) { [weak self] restaurant, error in
             DispatchQueue.main.async {
                 if let error = error {
-                    print("❌ Error in restaurant settings listener: \(error.localizedDescription)")
+                    Logger.debug("❌ Error in restaurant settings listener: \(error.localizedDescription)")
                     return
                 }
                 
                 if let restaurant = restaurant {
-                    print("🔄 Restaurant settings updated from dashboard")
+                    Logger.debug("🔄 Restaurant settings updated from dashboard")
                     self?.currentRestaurant = restaurant
                     
                     // Log important status changes
                     if restaurant.isTemporarilyClosed {
-                        print("🔒 Restaurant is now CLOSED: \(restaurant.closedReason ?? "No reason")")
+                        Logger.debug("🔒 Restaurant is now CLOSED: \(restaurant.closedReason ?? "No reason")")
                     }
                     if restaurant.isRestaurantFull {
-                        print("🈵 Restaurant is now FULL: \(restaurant.fullReason ?? "No reason")")
+                        Logger.debug("🈵 Restaurant is now FULL: \(restaurant.fullReason ?? "No reason")")
                     }
                 }
             }
