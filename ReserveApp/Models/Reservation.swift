@@ -146,7 +146,9 @@ struct Reservation: Identifiable, Codable {
         
         // Encode date as string for Firebase
         let formatter = DateFormatter()
-        formatter.dateFormat = "dd/MM/yyyy"
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: "Europe/Paris")
         try container.encode(formatter.string(from: date), forKey: .dateString)
         
         // Also encode dateTimestamp for proper ordering

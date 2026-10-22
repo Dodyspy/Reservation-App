@@ -361,6 +361,11 @@ class RestaurantService {
         dateFormatter.timeZone = TimeZone(identifier: "Europe/Paris")
         dateFormatter.locale = Locale(identifier: "fr_FR")
         
+        let isoFormatter = DateFormatter()
+        isoFormatter.dateFormat = "yyyy-MM-dd"
+        isoFormatter.timeZone = TimeZone(identifier: "Europe/Paris")
+        isoFormatter.locale = Locale(identifier: "en_US_POSIX")
+        
         let noonDate = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: updated.date) ?? updated.date
         
         var updatedFields: [String: Any] = [
@@ -368,7 +373,8 @@ class RestaurantService {
             "email": updated.email,
             "phone": updated.phone,
             "guests": updated.numberOfPeople,
-            "date": dateFormatter.string(from: updated.date),
+            "date": isoFormatter.string(from: updated.date),
+            "dateISO": isoFormatter.string(from: updated.date),
             "dateTimestamp": Timestamp(date: noonDate),
             "time": updated.time,
             "notes": updated.specialRequests ?? "",

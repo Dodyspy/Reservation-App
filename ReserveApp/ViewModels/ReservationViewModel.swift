@@ -355,9 +355,9 @@ class ReservationViewModel: ObservableObject {
         
         // Format date for Firestore
         let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "dd/MM/yyyy"
+        dateFormatter.dateFormat = "yyyy-MM-dd"
         dateFormatter.timeZone = TimeZone(identifier: "Europe/Paris")
-        dateFormatter.locale = Locale(identifier: "fr_FR")
+        dateFormatter.locale = Locale(identifier: "en_US_POSIX")
         let dateString = dateFormatter.string(from: reservation.date)
         
         // Use noon to avoid timezone boundary issues (same as decoder)
@@ -370,6 +370,7 @@ class ReservationViewModel: ObservableObject {
             "phone": reservation.phone,
             "guests": reservation.numberOfPeople,
             "date": dateString,
+            "dateISO": dateString,
             "dateTimestamp": Timestamp(date: noonDate),
             "time": reservation.time,
             "notes": reservation.specialRequests ?? "Aucune note",
