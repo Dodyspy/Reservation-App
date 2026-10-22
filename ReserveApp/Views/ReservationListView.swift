@@ -372,10 +372,17 @@ struct ReservationListView: View {
                             .padding(.horizontal, 20)
                             
                             List {
-                                ForEach(displayedReservations) { reservation in
-                                    SwipeableReservationCard(reservation: reservation, viewModel: viewModel)
-                                        .listRowInsets(EdgeInsets())
-                                        .listRowBackground(Color.clear)
+                                ForEach(ServiceType.allCases, id: \.self) { service in
+                                    let serviceReservations = displayedReservations.filter { $0.service == service }
+                                    if !serviceReservations.isEmpty {
+                                        Section(header: serviceHeader(service, reservations: serviceReservations)) {
+                                            ForEach(serviceReservations) { reservation in
+                                                SwipeableReservationCard(reservation: reservation, viewModel: viewModel)
+                                                    .listRowInsets(EdgeInsets())
+                                                    .listRowBackground(Color.clear)
+                                            }
+                                        }
+                                    }
                                 }
                             }
                             .listStyle(PlainListStyle())
@@ -622,20 +629,32 @@ struct ReservationListView: View {
     
     // Filter reservations by service (Midi/Soir/All)
     private func filterByService(_ reservations: [Reservation]) -> [Reservation] {
+        let sorted = reservations.sorted(by: Reservation.byServiceTime)
         switch selectedService {
         case .all:
-            return reservations
+            return sorted
         case .midi:
-            return reservations.filter { reservation in
-                let hour = Int(reservation.time.prefix(2)) ?? 0
-                return hour >= 12 && hour < 15
-            }
+            return sorted.filter { $0.service == .lunch }
         case .soir:
-            return reservations.filter { reservation in
-                let hour = Int(reservation.time.prefix(2)) ?? 0
-                return hour >= 19 && hour < 23
-            }
+            return sorted.filter { $0.service == .dinner }
         }
+    }
+
+    private func serviceHeader(_ service: ServiceType, reservations: [Reservation]) -> some View {
+        let active = reservations.filter { $0.status != .cancelled && $0.status != .noShow }
+        let covers = active.reduce(0) { $0 + $1.numberOfPeople }
+        return HStack {
+            Text(service == .lunch ? "Midi" : "Soir")
+                .font(.custom("Didot", size: 17))
+                .foregroundColor(AppTheme.gold)
+            Spacer()
+            Text("\(active.count) rés. · \(covers) couvert\(covers > 1 ? "s" : "")")
+                .font(.caption)
+                .foregroundColor(AppTheme.cream.opacity(0.7))
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 6)
+        .textCase(nil)
     }
     
     // MARK: - Service Status Management

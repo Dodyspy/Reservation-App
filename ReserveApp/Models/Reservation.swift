@@ -174,6 +174,28 @@ struct Reservation: Identifiable, Codable {
     }
 }
 
+extension Reservation {
+    var timeInMinutes: Int {
+        let parts = time.lowercased()
+            .replacingOccurrences(of: "h", with: ":")
+            .split(separator: ":")
+            .map { Int($0.trimmingCharacters(in: .whitespaces)) ?? 0 }
+        return (parts.first ?? 0) * 60 + (parts.count > 1 ? parts[1] : 0)
+    }
+
+    var service: ServiceType {
+        timeInMinutes < 16 * 60 ? .lunch : .dinner
+    }
+
+    static func byServiceTime(_ lhs: Reservation, _ rhs: Reservation) -> Bool {
+        if lhs.timeInMinutes != rhs.timeInMinutes { return lhs.timeInMinutes < rhs.timeInMinutes }
+        let lhsCreated = lhs.createdAt ?? .distantPast
+        let rhsCreated = rhs.createdAt ?? .distantPast
+        if lhsCreated != rhsCreated { return lhsCreated < rhsCreated }
+        return (lhs.id ?? "") < (rhs.id ?? "")
+    }
+}
+
 enum ReservationStatus: String, Codable, CaseIterable {
     case pending = "pending"
     case confirmed = "confirmed"
