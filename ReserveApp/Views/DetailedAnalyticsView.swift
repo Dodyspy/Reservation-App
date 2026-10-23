@@ -122,57 +122,33 @@ struct OverviewAnalyticsView: View {
                         .foregroundColor(AppTheme.cream)
                 }
                 
-                if #available(iOS 16.0, *) {
-                    Chart(weeklyStats) { item in
-                        LineMark(
-                            x: .value("Semaine", item.week),
-                            y: .value("Réservations", item.reservations)
-                        )
-                        .foregroundStyle(AppTheme.gold)
-                        .symbol(Circle().strokeBorder(lineWidth: 2))
-                        
-                        AreaMark(
-                            x: .value("Semaine", item.week),
-                            y: .value("Réservations", item.reservations)
-                        )
-                        .foregroundStyle(AppTheme.gold.opacity(0.2))
+                Chart(weeklyStats) { item in
+                    LineMark(
+                        x: .value("Semaine", item.week),
+                        y: .value("Réservations", item.reservations)
+                    )
+                    .foregroundStyle(AppTheme.gold)
+                    .symbol(Circle().strokeBorder(lineWidth: 2))
+                    
+                    AreaMark(
+                        x: .value("Semaine", item.week),
+                        y: .value("Réservations", item.reservations)
+                    )
+                    .foregroundStyle(AppTheme.gold.opacity(0.2))
+                }
+                .frame(height: 120)
+                .chartYAxis {
+                    AxisMarks(position: .leading) { _ in
+                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                            .foregroundStyle(AppTheme.cream.opacity(0.3))
+                        AxisValueLabel()
+                            .foregroundStyle(AppTheme.cream.opacity(0.7))
                     }
-                    .frame(height: 120)
-                    .chartYAxis {
-                        AxisMarks(position: .leading) { _ in
-                            AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
-                                .foregroundStyle(AppTheme.cream.opacity(0.3))
-                            AxisValueLabel()
-                                .foregroundStyle(AppTheme.cream.opacity(0.7))
-                        }
-                    }
-                    .chartXAxis {
-                        AxisMarks { _ in
-                            AxisValueLabel()
-                                .foregroundStyle(AppTheme.cream.opacity(0.7))
-                        }
-                    }
-                } else {
-                    // Fallback for iOS 15
-                    VStack(spacing: 8) {
-                        ForEach(weeklyStats, id: \.week) { item in
-                            HStack {
-                                Text(item.week)
-                                    .font(.caption)
-                                    .foregroundColor(AppTheme.cream)
-                                    .frame(width: 60, alignment: .leading)
-                                
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(AppTheme.gold)
-                                    .frame(width: CGFloat(item.reservations * 10), height: 16)
-                                
-                                Text("\(item.reservations)")
-                                    .font(.caption)
-                                    .foregroundColor(AppTheme.cream.opacity(0.7))
-                                
-                                Spacer()
-                            }
-                        }
+                }
+                .chartXAxis {
+                    AxisMarks { _ in
+                        AxisValueLabel()
+                            .foregroundStyle(AppTheme.cream.opacity(0.7))
                     }
                 }
             }

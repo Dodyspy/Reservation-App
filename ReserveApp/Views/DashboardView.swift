@@ -314,51 +314,27 @@ struct ReservationsByTimeChart: View {
                     .foregroundColor(AppTheme.cream)
             }
             
-            if #available(iOS 16.0, *) {
-                Chart(timeSlotData) { item in
-                    BarMark(
-                        x: .value("Heure", item.time),
-                        y: .value("Réservations", item.count)
-                    )
-                    .foregroundStyle(AppTheme.gold.gradient)
-                    .cornerRadius(4)
+            Chart(timeSlotData) { item in
+                BarMark(
+                    x: .value("Heure", item.time),
+                    y: .value("Réservations", item.count)
+                )
+                .foregroundStyle(AppTheme.gold.gradient)
+                .cornerRadius(4)
+            }
+            .frame(height: 150)
+            .chartYAxis {
+                AxisMarks(position: .leading) { _ in
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                        .foregroundStyle(AppTheme.cream.opacity(0.3))
+                    AxisValueLabel()
+                        .foregroundStyle(AppTheme.cream.opacity(0.7))
                 }
-                .frame(height: 150)
-                .chartYAxis {
-                    AxisMarks(position: .leading) { _ in
-                        AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
-                            .foregroundStyle(AppTheme.cream.opacity(0.3))
-                        AxisValueLabel()
-                            .foregroundStyle(AppTheme.cream.opacity(0.7))
-                    }
-                }
-                .chartXAxis {
-                    AxisMarks { _ in
-                        AxisValueLabel()
-                            .foregroundStyle(AppTheme.cream.opacity(0.7))
-                    }
-                }
-            } else {
-                // Fallback for iOS 15
-                VStack(spacing: 8) {
-                    ForEach(timeSlotData.prefix(5), id: \.time) { item in
-                        HStack {
-                            Text(item.time)
-                                .font(.caption)
-                                .foregroundColor(AppTheme.cream)
-                                .frame(width: 60, alignment: .leading)
-                            
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(AppTheme.gold)
-                                .frame(width: CGFloat(item.count * 20), height: 20)
-                            
-                            Text("\(item.count)")
-                                .font(.caption)
-                                .foregroundColor(AppTheme.cream.opacity(0.7))
-                            
-                            Spacer()
-                        }
-                    }
+            }
+            .chartXAxis {
+                AxisMarks { _ in
+                    AxisValueLabel()
+                        .foregroundStyle(AppTheme.cream.opacity(0.7))
                 }
             }
         }
