@@ -11,11 +11,35 @@ struct DashboardView: View {
         case week = "Cette semaine"
         case month = "Ce mois"
         
-        var days: Int {
+        static var calendar: Calendar {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.locale = Locale(identifier: "fr_FR")
+            calendar.timeZone = TimeZone(identifier: "Europe/Paris") ?? .current
+            calendar.firstWeekday = 2
+            return calendar
+        }
+        
+        func interval(containing date: Date = Date()) -> DateInterval {
+            let component: Calendar.Component = self == .today ? .day : self == .week ? .weekOfYear : .month
+            return Self.calendar.dateInterval(of: component, for: date) ?? DateInterval(start: date, duration: 86_400)
+        }
+        
+        var periodLabel: String {
+            let interval = interval()
+            let lastDay = interval.end.addingTimeInterval(-1)
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "fr_FR")
+            formatter.timeZone = Self.calendar.timeZone
             switch self {
-            case .today: return 1
-            case .week: return 7
-            case .month: return 30
+            case .today:
+                formatter.dateFormat = "EEEE d MMMM"
+                return formatter.string(from: interval.start).capitalized
+            case .week:
+                formatter.dateFormat = "EEE d MMM"
+                return "\(formatter.string(from: interval.start)) – \(formatter.string(from: lastDay))"
+            case .month:
+                formatter.dateFormat = "LLLL yyyy"
+                return formatter.string(from: interval.start).capitalized
             }
         }
     }
@@ -39,6 +63,10 @@ struct DashboardView: View {
                         .pickerStyle(SegmentedPickerStyle())
                         .background(AppTheme.darkGray)
                         .cornerRadius(8)
+                        
+                        Text(selectedTimeframe.periodLabel)
+                            .font(.caption)
+                            .foregroundColor(AppTheme.cream.opacity(0.7))
                     }
                     .padding(.horizontal)
                     
@@ -92,19 +120,8 @@ struct DashboardView: View {
     // MARK: - Data Filtering Methods
     
     private func getFilteredReservations() -> [Reservation] {
-        let calendar = Calendar.current
-        let now = Date()
-        
-        switch selectedTimeframe {
-        case .today:
-            return viewModel.reservations.filter { calendar.isDate($0.date, inSameDayAs: now) }
-        case .week:
-            let weekAgo = calendar.date(byAdding: .day, value: -7, to: now) ?? now
-            return viewModel.reservations.filter { $0.date >= weekAgo }
-        case .month:
-            let monthAgo = calendar.date(byAdding: .day, value: -30, to: now) ?? now
-            return viewModel.reservations.filter { $0.date >= monthAgo }
-        }
+        let interval = selectedTimeframe.interval()
+        return viewModel.reservations.filter { $0.date >= interval.start && $0.date < interval.end }
     }
     
     private func getTodayReservations() -> [Reservation] {
